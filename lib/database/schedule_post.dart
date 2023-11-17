@@ -7,9 +7,15 @@ import 'package:bell_exchange/Database/schedule_entry.dart';
 ///
 
 class SchedulePost {
-  ScheduleEntry entryPost;
+  int month;
+  int date;
+  int weekdayNumber;
+  String weekday = '';
+  String role = '';
+  String location = '';
+
   //TODO: add messages to a SchedulePosted
-  SchedulePost(this.entryPost);
+  SchedulePost(this.month, this.date, this.weekdayNumber);
 }
 
 createSchedulePostInFirebase() {}

@@ -6,7 +6,12 @@ import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
+/// Hi me... we're currently working on the UI for the Full Screen form.
+/// We have to put the date scroller thingy into a card, add a start time and end time picker,
+/// then create the firebase equivalent of the post.
+/// After that we can connect the API back to the exchange page and load all posted shifts.
+///
+///
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -155,20 +155,39 @@ class _FullFormState extends State<FullForm> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            EasyInfiniteDateTimeLine(
-              controller: _controller,
-              firstDate: DateTime(2023),
-              focusDate: _focusDate,
-              lastDate: DateTime(2023, 12, 31),
-              onDateChange: (selectedDate) {
-                setState(() {
-                  _focusDate = selectedDate;
-                });
-              },
-            ),
+            easyInfiniteDateTimeLine(),
+            buttonBar(),
           ],
         ),
       ),
     );
+  }
+
+  easyInfiniteDateTimeLine() {
+    return EasyInfiniteDateTimeLine(
+      controller: _controller,
+      firstDate: DateTime(2023),
+      focusDate: _focusDate,
+      lastDate: DateTime(2023, 12, 31),
+      onDateChange: (selectedDate) {
+        setState(() {
+          _focusDate = selectedDate;
+        });
+      },
+    );
+  }
+
+  buttonBar() {
+    return ButtonBar(children: [
+      ElevatedButton(onPressed: () => postShift(), child: const Text('Post Shift'))
+    ],);
+  }
+
+  postShift() {
+
+    Fluttertoast.showToast(
+        msg: 'Info: ${_focusDate!.day} ${_focusDate!.month} ${_focusDate!.weekday}',
+        gravity: ToastGravity.BOTTOM,
+        toastLength: Toast.LENGTH_SHORT);
   }
 }
