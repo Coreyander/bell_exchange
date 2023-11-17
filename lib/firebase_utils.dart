@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 class FirebaseUtils {
   /*
   * Use cases to develop:
@@ -23,6 +26,17 @@ class FirebaseUtils {
   authUserWithPassword() {}
   authUserWithGoogle() {}
   authUserWithFacebook() {}
+
+  String getCurrentUserID(FirebaseAuth auth) {
+      User? user = auth.currentUser;
+      if (user != null) {
+        String userId = user.uid;
+        return userId;
+      } else {
+        // No user is signed in
+        return '';
+      }
+  }
 
   filterFeed() {}
 

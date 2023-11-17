@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
+import 'package:easy_date_timeline/easy_date_timeline.dart';
 
 class ExchangeScreen extends StatefulWidget {
   const ExchangeScreen({super.key});
@@ -10,31 +11,6 @@ class ExchangeScreen extends StatefulWidget {
 }
 
 class _ExchangeScreenState extends State<ExchangeScreen> {
-  List<String> getDates() {
-    List<String> dates = [];
-    var today = DateTime.now();
-
-    for (var i = 0; i < 14; i++) {
-      var nextDate = today.add(Duration(days: i));
-      var formattedDate = DateFormat('yyyy-MM-dd').format(nextDate);
-      dates.add(formattedDate);
-    }
-
-    return dates;
-  }
-
-  List<String> getDays() {
-    List<String> days = [];
-    var today = DateTime.now();
-
-    for (var i = 0; i < 14; i++) {
-      var nextDay = today.add(Duration(days: i));
-      var formattedDay = DateFormat('EEEE').format(nextDay);
-      days.add(formattedDay);
-    }
-
-    return days;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,16 +90,85 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
 
   fab() {
     return FloatingActionButton(
-      onPressed: fabToast,
+      elevation: 0,
+      onPressed: () => fabOnPressed(),
       tooltip: 'Increment',
       child: const Icon(Icons.add_chart),
     );
   }
 
-  fabToast() {
+  fabOnPressed() {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => FullForm()));
     Fluttertoast.showToast(
         msg: 'Make me do something!!!',
         gravity: ToastGravity.BOTTOM,
         toastLength: Toast.LENGTH_SHORT);
+  }
+
+  List<String> getDates() {
+    List<String> dates = [];
+    var today = DateTime.now();
+
+    for (var i = 0; i < 14; i++) {
+      var nextDate = today.add(Duration(days: i));
+      var formattedDate = DateFormat('yyyy-MM-dd').format(nextDate);
+      dates.add(formattedDate);
+    }
+
+    return dates;
+  }
+
+  List<String> getDays() {
+    List<String> days = [];
+    var today = DateTime.now();
+
+    for (var i = 0; i < 14; i++) {
+      var nextDay = today.add(Duration(days: i));
+      var formattedDay = DateFormat('EEEE').format(nextDay);
+      days.add(formattedDay);
+    }
+
+    return days;
+  }
+}
+
+class FullForm extends StatefulWidget {
+  const FullForm({super.key});
+  @override
+  State<FullForm> createState() => _FullFormState();
+}
+
+class _FullFormState extends State<FullForm> {
+
+  final EasyInfiniteDateTimelineController _controller =
+  EasyInfiniteDateTimelineController();
+  DateTime? _focusDate = DateTime.now();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Full Screen Form'),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            EasyInfiniteDateTimeLine(
+              controller: _controller,
+              firstDate: DateTime(2023),
+              focusDate: _focusDate,
+              lastDate: DateTime(2023, 12, 31),
+              onDateChange: (selectedDate) {
+                setState(() {
+                  _focusDate = selectedDate;
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

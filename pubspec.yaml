@@ -14,11 +14,16 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  fluttertoast: ^8.0.8
-  intl: ^0.17.0
+  fluttertoast: ^8.2.4
+  intl: ^0.18.1
   firebase_core: ^2.20.0
   firebase_auth: ^4.12.0
   cloud_firestore: ^4.12.1
+  checkmark: ^0.0.2+1
+  http: ^1.1.0
+  email_validator: ^2.1.16
+  easy_date_timeline: ^1.0.2
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,4 @@
-import 'package:bell_exchange/Database/user.dart';
+import 'my_user.dart';
 
 ///This class represents a day or night scheduled and the user associated with it.
 
@@ -21,7 +21,7 @@ class ScheduleEntry {
   double startTime;
   double endTime;
   double hours = 0;
-  User user;
+  MyUser user;
   ScheduleFlags flags;
 
   //Day shift

@@ -22,10 +22,12 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+
 android {
     namespace "com.example.bell_exchange"
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
+
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -50,6 +52,7 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        minSdkVersion 21
     }
 
     buildTypes {
@@ -59,6 +62,7 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
 }
 
 flutter {

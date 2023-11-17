@@ -6,8 +6,12 @@ import 'package:bell_exchange/Database/schedule_entry.dart';
 /// REMOVE THIS COMMENT WHEN TODO IS COMPLETE!
 ///
 
-class SchedulePosted {
-  ScheduleEntry entryPosted;
+class SchedulePost {
+  ScheduleEntry entryPost;
   //TODO: add messages to a SchedulePosted
-  SchedulePosted(this.entryPosted);
+  SchedulePost(this.entryPost);
 }
+
+createSchedulePostInFirebase() {}
+changeSchedulePostInFirebase() {}
+deleteSchedulePostInFirebase() {}

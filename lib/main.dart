@@ -3,15 +3,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'Screens/LogInScreen.dart';
 import 'firebase_options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  try {
-    initFirebase();
-  } catch(error) {
-    if (kDebugMode) {
-      print('Exception occurred: Could not initialize firebase to the app. Cloud data is not supported until this is resolved');
-    }
-  }
+
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true
+  );
   runApp(const MyApp());
 }
 
@@ -30,10 +34,4 @@ class MyApp extends StatelessWidget {
       home: const LogInScreen(title: 'Main'),
     );
   }
-}
-
-Future<void> initFirebase() async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
 }
