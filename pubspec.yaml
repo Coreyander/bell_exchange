@@ -24,6 +24,8 @@ dependencies:
   email_validator: ^2.1.16
   easy_date_timeline: ^1.0.2
   shared_preferences: ^2.2.2
+  time_range: ^1.1.0
+  calendar_date_picker2: ^0.5.3
 
 dev_dependencies:
   flutter_test:

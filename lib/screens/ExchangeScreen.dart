@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:easy_date_timeline/easy_date_timeline.dart';
+import 'package:time_range/time_range.dart';
+import 'package:calendar_date_picker2/calendar_date_picker2.dart';
+
+/// Move the controller variables and focus date into individual cards so that they all have their own data
+/// You can potentially do this by creating custom card class to send the variables to.
 
 class ExchangeScreen extends StatefulWidget {
   const ExchangeScreen({super.key});
@@ -11,13 +16,13 @@ class ExchangeScreen extends StatefulWidget {
 }
 
 class _ExchangeScreenState extends State<ExchangeScreen> {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Center(child: Text('Exchange'))),
       endDrawer: mySchedule(),
-      body: Center(child: ListView(children: <Widget>[
+      body: Center(
+          child: ListView(children: <Widget>[
         //exchangeFeed()
       ])),
       backgroundColor: Theme.of(context).canvasColor,
@@ -76,16 +81,16 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
       ),
     );
   }
-  
+
   exchangeFeed() {
-   // ListView.builder(
-   //   itemCount: items.length, // Number of items in the list
-   //   itemBuilder: (BuildContext context, int index) {
-   //     return ListTile(
-   //       title: Text(items[index]), // Get the data for the current index
-   //     );
-   //   },
-   // )
+    // ListView.builder(
+    //   itemCount: items.length, // Number of items in the list
+    //   itemBuilder: (BuildContext context, int index) {
+    //     return ListTile(
+    //       title: Text(items[index]), // Get the data for the current index
+    //     );
+    //   },
+    // )
   }
 
   fab() {
@@ -98,7 +103,9 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
   }
 
   fabOnPressed() {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => FullForm()));
+    Navigator.push(
+      //FullFormCalender()
+        context, MaterialPageRoute(builder: (context) => FullFormCalender()));
     Fluttertoast.showToast(
         msg: 'Make me do something!!!',
         gravity: ToastGravity.BOTTOM,
@@ -132,62 +139,168 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
   }
 }
 
-class FullForm extends StatefulWidget {
-  const FullForm({super.key});
+class FullFormDateScroll extends StatefulWidget {
+  const FullFormDateScroll({super.key});
   @override
-  State<FullForm> createState() => _FullFormState();
+  State<FullFormDateScroll> createState() => _FullFormDateScrollState();
 }
 
-class _FullFormState extends State<FullForm> {
+class _FullFormDateScrollState extends State<FullFormDateScroll> {
+  int shiftCards = 2;
+  //@override
+  List<EasyInfiniteDateTimelineController> controllers = [];
+  List<DateTime> focusDate = [];
+  @override
+  void initState() {
+    super.initState();
+    initialize();
+  }
 
-  final EasyInfiniteDateTimelineController _controller =
-  EasyInfiniteDateTimelineController();
-  DateTime? _focusDate = DateTime.now();
+  void initialize() {
+    controllers = List.generate(
+        shiftCards, (index) => EasyInfiniteDateTimelineController());
+    focusDate = List.generate(shiftCards, (index) => DateTime.now());
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Full Screen Form'),
+        title: const Text('Add Schedule'), // Set your app title here
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            easyInfiniteDateTimeLine(),
-            buttonBar(),
-          ],
-        ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: shiftCards,
+              itemBuilder: (BuildContext context, int index) {
+                return Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Card(
+                    child: scheduleItem(index),
+                  ),
+                );
+              },
+            ),
+          ),
+          buttonBar(),
+        ],
       ),
     );
   }
 
-  easyInfiniteDateTimeLine() {
-    return EasyInfiniteDateTimeLine(
-      controller: _controller,
-      firstDate: DateTime(2023),
-      focusDate: _focusDate,
-      lastDate: DateTime(2023, 12, 31),
-      onDateChange: (selectedDate) {
-        setState(() {
-          _focusDate = selectedDate;
-        });
-      },
+  scheduleItem(int index) {
+    return Column(
+      children: [
+        EasyInfiniteDateTimeLine(
+          controller: controllers.elementAt(index),
+          firstDate: DateTime(2023),
+          focusDate: focusDate.elementAt(index),
+          lastDate: DateTime(2023, 12, 31),
+          onDateChange: (selectedDate) {
+            setState(() {
+              focusDate[index] = selectedDate;
+            });
+          }),
+          TimeRange(
+              timeBlock: 30,
+              onRangeCompleted: (range) => setState(() => print(range)),
+              firstTime: const TimeOfDay(hour: 00, minute: 00),
+              lastTime: const TimeOfDay(hour: 24, minute: 00)),
+      ],
     );
   }
 
   buttonBar() {
-    return ButtonBar(children: [
-      ElevatedButton(onPressed: () => postShift(), child: const Text('Post Shift'))
-    ],);
+    return ButtonBar(
+      alignment: MainAxisAlignment.spaceBetween,
+      children: [
+        ElevatedButton(onPressed: () => addShift(), child: const Text('+')),
+        ElevatedButton(onPressed: () => removeShift(), child: const Text('-')),
+        ElevatedButton(
+            onPressed: () => postShift(), child: const Text('Post Shifts')),
+      ],
+    );
   }
 
   postShift() {
-
     Fluttertoast.showToast(
-        msg: 'Info: ${_focusDate!.day} ${_focusDate!.month} ${_focusDate!.weekday}',
+        msg:
+            'Info: ${focusDate.elementAt(0)!.day} ${focusDate.elementAt(0)!.month} ${focusDate.elementAt(0)!.weekday}',
         gravity: ToastGravity.BOTTOM,
         toastLength: Toast.LENGTH_SHORT);
   }
+
+  addShift() {
+    setState(() {
+      shiftCards++;
+      controllers.add(EasyInfiniteDateTimelineController());
+      focusDate.add(DateTime.now());
+    });
+  }
+
+  removeShift() {
+    setState(() {
+      if (shiftCards > 1) {
+        shiftCards--;
+        controllers.removeLast();
+        focusDate.removeLast();
+      }
+    });
+  }
+}
+
+class FullFormCalender extends StatefulWidget {
+  const FullFormCalender({super.key});
+  @override
+  State<StatefulWidget> createState() => _FullFormCalenderState();
+  
+}
+
+class _FullFormCalenderState extends State<FullFormCalender> {
+  List<DateTime?> _dates = [
+    DateTime.now(),
+  ];
+  @override
+  void initState() {
+    super.initState();
+    initialize();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Add Schedule'), // Set your app title here
+      ),
+      body: Column(
+        children: [
+          calender(),
+          timePicker(),
+          shiftList(),
+          buttonBar()
+        ],
+      ),
+    );
+  }
+
+  initialize() {
+
+  }
+
+  calender() {
+    return CalendarDatePicker2(
+      config: CalendarDatePicker2Config(
+        calendarType: CalendarDatePicker2Type.single
+      ),
+      value: _dates,
+      onValueChanged: (dates) => _dates = dates,
+    );
+  }
+
+  timePicker() {}
+
+  shiftList() {}
+
+  buttonBar() {}
 }
