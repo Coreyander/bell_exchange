@@ -1,78 +1,97 @@
-import 'my_user.dart';
 
 ///This class represents a day or night scheduled and the user associated with it.
+///This class with an empty constructor can be used to access Firebase methods that
+///manipulate or change the Data Structure. This consolidates all uses of the data struct
+///to this file to make updates or changes to the parsing easier in the future.
 
-enum Day {
-  monday,
-  tuesday,
-  wednesday,
-  thursday,
-  friday,
-  saturday,
-  sunday,
-  tomorrow
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
+
+import '../datetime_utils.dart';
 
 class ScheduleEntry {
-  String role;
-  String location;
-  Day day;
-  Day endDay = Day.tomorrow;
-  double startTime;
-  double endTime;
+  String role = '';
+  String location = '';
+  String startTime = '';
+  String endTime = '';
   double hours = 0;
-  MyUser user;
-  ScheduleFlags flags;
+  String user = '';
+  ScheduleFlags flags = ScheduleFlags();
+  DateTime day = DateTime.now();
+  String weekday = '';
 
-  //Day shift
-  ScheduleEntry(this.role, this.location, this.day, this.startTime,
-      this.endTime, this.user, this.flags) {
-    //Only supporting Military Time
-    hours = endTime - startTime;
+  // Use to access Firebase methods
+  ScheduleEntry.utils();
 
-    //Night shift
-    if (flags.overnight == true) {
-      switch (day) {
-        case Day.monday:
-          endDay = Day.tuesday;
-          break;
-        case Day.tuesday:
-          endDay = Day.wednesday;
-          break;
-        case Day.wednesday:
-          endDay = Day.thursday;
-          break;
-        case Day.thursday:
-          endDay = Day.friday;
-          break;
-        case Day.friday:
-          endDay = Day.saturday;
-          break;
-        case Day.saturday:
-          endDay = Day.sunday;
-          break;
-        case Day.sunday:
-          endDay = Day.monday;
-          break;
-        case Day.tomorrow:
-          /**
-          Day.tomorrow is the "null" initializer for endDay so the UI still has something to display
-          (example: a day shift has been flagged for overnight AFTER being posted as a day shift)
-          however day will never equal Day.tomorrow and this case should never execute
-          **/
-          break;
-      }
-    }
+  // Object Data structure
+  ScheduleEntry(
+      this.role,
+      this.location,
+      this.startTime,
+      this.endTime,
+      this.user,
+      this.flags,
+      this.day,
+      this.weekday,
+      );
+
+  //Firebase Data structure
+  Map<String, dynamic> toMap() {
+    return {
+      'role': role,
+      'location': location,
+      'startTime': startTime,
+      'endTime': endTime,
+      'hours': hours,
+      'user': user,
+      'flags': flags.toMap(), // Convert ScheduleFlags to Map
+      'day': Timestamp.fromDate(day), // Convert DateTime to Firestore Timestamp
+      'weekday': weekday,
+    };
+  }
+
+  ///Creating a schedule follows the syntax userID-Month-Day-Year and uses the Firestore set() method
+  ///meaning a user should only be able to post 1 shift per day and reposting will override the previous
+  ///shift posted for that day with the new time, role, location, etc..
+  Future<void> createScheduleDayInFirebase() async {
+    CollectionReference scheduleMasterList = FirebaseFirestore.instance.collection('schedule_master_list');
+    Map<String, dynamic> scheduleData = toMap();
+    await scheduleMasterList.doc("$user${"-"}${DateTimeUtils().getMonthFromDateTime(day)}${"-"}${DateTimeUtils().getWeekdayFromDateTime(day)}${"-"}${DateTime.now().year}").set(scheduleData);
+  }
+
+  changeScheduleDayInFirebase() {}
+  deleteScheduleDayInFirebase() {}
+
+  List<ScheduleEntry> getScheduleMasterList(AsyncSnapshot<QuerySnapshot> snapshot) {
+    List<ScheduleEntry> entryMasterList = snapshot.data!.docs.map((DocumentSnapshot doc) {
+      Map<String, dynamic> docData = doc.data() as Map<String, dynamic>;
+      return ScheduleEntry(docData['role'] ?? '',
+          docData['location'] ?? '',
+          docData['startTime'] ?? '',
+          docData['endTime'] ?? '',
+          docData['user'] ?? '',
+          docData['flags'] ?? <String, dynamic> {},
+          docData['day'] ?? DateTime.now(),
+          docData['weekday'] ?? '');
+    }).toList();
+    return entryMasterList;
   }
 }
 
 class ScheduleFlags {
-  bool overnight;
-  bool overtime;
-  bool covered;
-  ScheduleFlags(this.overnight, this.overtime, this.covered);
+  bool overnight = false;
+  bool overtime = false;
+  bool covered = false;
+
+  ScheduleFlags();
+
+  Map<String, dynamic> toMap() {
+    return {
+      'overnight': overnight,
+      'overtime': overtime,
+      'covered': covered,
+    };
+  }
+
 }
 
-createScheduleDayInFirebase() {}
-changeScheduleDayInFirebase() {}
-deleteScheduleDayInFirebase() {}

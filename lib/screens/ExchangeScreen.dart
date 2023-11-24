@@ -1,9 +1,14 @@
+import 'package:bell_exchange/database/schedule_entry.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:time_range/time_range.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
+
+import '../datetime_utils.dart';
 
 /// Move the controller variables and focus date into individual cards so that they all have their own data
 /// You can potentially do this by creating custom card class to send the variables to.
@@ -21,10 +26,7 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
     return Scaffold(
       appBar: AppBar(title: const Center(child: Text('Exchange'))),
       endDrawer: mySchedule(),
-      body: Center(
-          child: ListView(children: <Widget>[
-        //exchangeFeed()
-      ])),
+      body: Center(child: ListView(children: <Widget>[exchangeFeed()])),
       backgroundColor: Theme.of(context).canvasColor,
       floatingActionButton: fab(),
     );
@@ -83,14 +85,25 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
   }
 
   exchangeFeed() {
-    // ListView.builder(
-    //   itemCount: items.length, // Number of items in the list
-    //   itemBuilder: (BuildContext context, int index) {
-    //     return ListTile(
-    //       title: Text(items[index]), // Get the data for the current index
-    //     );
-    //   },
-    // )
+    return FutureBuilder(
+        future: FirebaseFirestore.instance
+            .collection("/schedule_master_list")
+            .get(),
+        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator();
+          } else if (snapshot.hasError) {
+            return Text('Error: ${snapshot.error}');
+          } else {
+            List<ScheduleEntry> entryMasterList = ScheduleEntry.utils().getScheduleMasterList(snapshot);
+            return ListView.builder(itemCount: entryMasterList.length,itemBuilder: (context, index) {
+              return Card(
+      //TODO: Create card of schedule data
+              );
+            });
+          }
+
+        });
   }
 
   fab() {
@@ -104,8 +117,9 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
 
   fabOnPressed() {
     Navigator.push(
-      //FullFormCalender()
-        context, MaterialPageRoute(builder: (context) => FullFormCalender()));
+        //FullFormCalender()
+        context,
+        MaterialPageRoute(builder: (context) => FullFormCalender()));
     Fluttertoast.showToast(
         msg: 'Make me do something!!!',
         gravity: ToastGravity.BOTTOM,
@@ -139,76 +153,100 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
   }
 }
 
-class FullFormDateScroll extends StatefulWidget {
-  const FullFormDateScroll({super.key});
+class FullFormCalender extends StatefulWidget {
+  const FullFormCalender({super.key});
   @override
-  State<FullFormDateScroll> createState() => _FullFormDateScrollState();
+  State<StatefulWidget> createState() => _FullFormCalenderState();
 }
 
-class _FullFormDateScrollState extends State<FullFormDateScroll> {
-  int shiftCards = 2;
-  //@override
-  List<EasyInfiniteDateTimelineController> controllers = [];
-  List<DateTime> focusDate = [];
+class _FullFormCalenderState extends State<FullFormCalender> {
+  List<DateTime?> _date = [
+    DateTime.now(),
+  ];
+  TimeOfDay _start =
+      TimeOfDay.fromDateTime(DateTime(1989, 2, 2, 9, 0, 0, 0, 0));
+  TimeOfDay _end = TimeOfDay.fromDateTime(DateTime(1989, 2, 2, 17, 0, 0, 0, 0));
+  ScheduleEntry myScheduleEntry = ScheduleEntry(
+      "Bellperson",
+      "CS",
+      "",
+      "",
+      FirebaseAuth.instance.currentUser!.uid,
+      ScheduleFlags(),
+      DateTime.now(),
+      DateTimeUtils().getWeekdayFromDateTime(DateTime.now()));
   @override
   void initState() {
     super.initState();
     initialize();
   }
 
-  void initialize() {
-    controllers = List.generate(
-        shiftCards, (index) => EasyInfiniteDateTimelineController());
-    focusDate = List.generate(shiftCards, (index) => DateTime.now());
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Schedule'), // Set your app title here
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: shiftCards,
-              itemBuilder: (BuildContext context, int index) {
-                return Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Card(
-                    child: scheduleItem(index),
-                  ),
-                );
-              },
+        appBar: AppBar(
+          title: const Text('Add Schedule'), // Set your app title here
+        ),
+        body: ListView(
+          children: [
+            Column(
+              children: [calender(), timePicker(), shiftList(), buttonBar()],
             ),
-          ),
-          buttonBar(),
-        ],
-      ),
+          ],
+        ));
+  }
+
+  initialize() {}
+
+  calender() {
+    return CalendarDatePicker2(
+      config: CalendarDatePicker2Config(
+          calendarType: CalendarDatePicker2Type.single),
+      value: _date,
+      onValueChanged: (date) => setState(() {
+        _date = date;
+        myScheduleEntry.day = _date[0]!;
+        myScheduleEntry.weekday =
+            DateTimeUtils().getWeekdayFromDateTime(_date[0]!);
+      }),
     );
   }
 
-  scheduleItem(int index) {
-    return Column(
-      children: [
-        EasyInfiniteDateTimeLine(
-          controller: controllers.elementAt(index),
-          firstDate: DateTime(2023),
-          focusDate: focusDate.elementAt(index),
-          lastDate: DateTime(2023, 12, 31),
-          onDateChange: (selectedDate) {
-            setState(() {
-              focusDate[index] = selectedDate;
-            });
-          }),
+  timePicker() {
+    return Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text(
+            "Start Time",
+            textScaleFactor: 1.2,
+          ),
           TimeRange(
-              timeBlock: 30,
-              onRangeCompleted: (range) => setState(() => print(range)),
+              timeStep: 15,
+              timeBlock: 15,
+              activeTextStyle: TextStyle(color: Colors.white),
+              onRangeCompleted: (range) => setState(() {
+                    _start = range!.start;
+                    _end = range.end;
+                    myScheduleEntry.startTime =
+                        "${_start.hour.toString().padLeft(2, "0")}${":"}${_start.minute.toString().padLeft(2, "0")}";
+                    myScheduleEntry.endTime =
+                        "${_end.hour.toString().padLeft(2, "0")}${":"}${_end.minute.toString().padLeft(2, "0")}";
+                  }),
               firstTime: const TimeOfDay(hour: 00, minute: 00),
               lastTime: const TimeOfDay(hour: 24, minute: 00)),
-      ],
-    );
+          const Text(
+            "End Time",
+            textScaleFactor: 1.2,
+          )
+        ]));
+  }
+
+  shiftList() {
+    return Text("${"My Shift\n"}"
+        "${myScheduleEntry.role}${" "}${myScheduleEntry.location}${"\n"}"
+        "${myScheduleEntry.weekday}${", "}${DateTimeUtils().getMonthFromDateTime(_date[0]!)}${" "}${myScheduleEntry.day.day}${DateTimeUtils().getSuffixFromDateTime(_date[0]!)}${"\n"}"
+        "${_start.hour.toString().padLeft(2, "0")}${":"}${_start.minute.toString().padLeft(2, "0")}  to  "
+        "${_end.hour.toString().padLeft(2, "0")}${":"}${_end.minute.toString().padLeft(2, "0")}");
   }
 
   buttonBar() {
@@ -224,83 +262,18 @@ class _FullFormDateScrollState extends State<FullFormDateScroll> {
   }
 
   postShift() {
+    myScheduleEntry.createScheduleDayInFirebase();
     Fluttertoast.showToast(
-        msg:
-            'Info: ${focusDate.elementAt(0)!.day} ${focusDate.elementAt(0)!.month} ${focusDate.elementAt(0)!.weekday}',
+        msg: 'Post a Shift Here!',
         gravity: ToastGravity.BOTTOM,
         toastLength: Toast.LENGTH_SHORT);
   }
 
   addShift() {
-    setState(() {
-      shiftCards++;
-      controllers.add(EasyInfiniteDateTimelineController());
-      focusDate.add(DateTime.now());
-    });
+    setState(() {});
   }
 
   removeShift() {
-    setState(() {
-      if (shiftCards > 1) {
-        shiftCards--;
-        controllers.removeLast();
-        focusDate.removeLast();
-      }
-    });
+    setState(() {});
   }
-}
-
-class FullFormCalender extends StatefulWidget {
-  const FullFormCalender({super.key});
-  @override
-  State<StatefulWidget> createState() => _FullFormCalenderState();
-  
-}
-
-class _FullFormCalenderState extends State<FullFormCalender> {
-  List<DateTime?> _dates = [
-    DateTime.now(),
-  ];
-  @override
-  void initState() {
-    super.initState();
-    initialize();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Schedule'), // Set your app title here
-      ),
-      body: Column(
-        children: [
-          calender(),
-          timePicker(),
-          shiftList(),
-          buttonBar()
-        ],
-      ),
-    );
-  }
-
-  initialize() {
-
-  }
-
-  calender() {
-    return CalendarDatePicker2(
-      config: CalendarDatePicker2Config(
-        calendarType: CalendarDatePicker2Type.single
-      ),
-      value: _dates,
-      onValueChanged: (dates) => _dates = dates,
-    );
-  }
-
-  timePicker() {}
-
-  shiftList() {}
-
-  buttonBar() {}
 }

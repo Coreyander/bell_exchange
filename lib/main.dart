@@ -6,10 +6,9 @@ import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Hi me... we're currently working on the UI for the Full Screen form.
-/// We have to put the date scroller thingy into a card, add a start time and end time picker,
-/// then create the firebase equivalent of the post.
-/// After that we can connect the API back to the exchange page and load all posted shifts.
+/// Hi me... we coded to 3 am LOL anyway, you're doing great I just
+/// wanted to tell you that you need to test Firebase to ensure ScheduleEntry.utils().getScheduleMasterList parses from Firebase correctly
+/// Then you need to make the cards in the Exchange Page for all posted shifts. Afterwards you can move on to creating the filters!
 ///
 ///
 
