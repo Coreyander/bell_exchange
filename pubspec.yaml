@@ -26,6 +26,8 @@ dependencies:
   shared_preferences: ^2.2.2
   time_range: ^1.1.0
   calendar_date_picker2: ^0.5.3
+  google_sign_in: ^6.1.6
+  flutter_signin_button: ^2.0.0
 
 dev_dependencies:
   flutter_test:

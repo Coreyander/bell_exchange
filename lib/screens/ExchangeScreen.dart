@@ -4,11 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
-import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:time_range/time_range.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
-
 import '../datetime_utils.dart';
+import '../widgets/checkbox_panel.dart';
 
 /// Move the controller variables and focus date into individual cards so that they all have their own data
 /// You can potentially do this by creating custom card class to send the variables to.
@@ -21,12 +20,15 @@ class ExchangeScreen extends StatefulWidget {
 }
 
 class _ExchangeScreenState extends State<ExchangeScreen> {
+  final List<bool> _isExpanded = [false];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Center(child: Text('Exchange'))),
       endDrawer: mySchedule(),
-      body: Center(child: ListView(children: <Widget>[exchangeFeed()])),
+      body:
+          Center(child: Column(children: <Widget>[filters(), exchangeFeed()])),
       backgroundColor: Theme.of(context).canvasColor,
       floatingActionButton: fab(),
     );
@@ -37,12 +39,19 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: <Widget>[
-          const DrawerHeader(
-            decoration: BoxDecoration(
+          DrawerHeader(
+            decoration: const BoxDecoration(
               color: Colors.blue,
             ),
-            child: Text(
-                'This Drawer allows at a glance view of schedule and messages'),
+            child: Row(
+              children: [
+                ElevatedButton(
+                    onPressed: () => Navigator.pushNamed(context, '/settings'),
+                    child: const Row(
+                      children: [Icon(Icons.settings), Text("Settings")],
+                    )),
+              ],
+            ),
           ),
           ExpansionTile(
             title: const Text('Messages'),
@@ -84,25 +93,76 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
     );
   }
 
+  filters() {
+    return ExpansionPanelList(
+      expansionCallback: (int index, bool isExpanded) {
+        setState(() {
+          _isExpanded[index] = isExpanded;
+        });
+      },
+      children: [
+        ExpansionPanel(
+            headerBuilder: (BuildContext context, bool isExpanded) {
+              return const ListTile(title: Text('Filters'));
+            },
+            body: Column(children: [
+              const CheckboxPanel(),
+              ElevatedButton(
+                  onPressed: () => setState(() {
+                        _isExpanded[0] = false;
+                        applyFilter();
+                      }),
+                  child: const Text('Apply'))
+            ]),
+            isExpanded: _isExpanded[0])
+      ],
+    );
+  }
+
   exchangeFeed() {
-    return FutureBuilder(
-        future: FirebaseFirestore.instance
+    return StreamBuilder(
+        stream: FirebaseFirestore.instance
             .collection("/schedule_master_list")
-            .get(),
+            .snapshots(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const CircularProgressIndicator();
           } else if (snapshot.hasError) {
             return Text('Error: ${snapshot.error}');
           } else {
-            List<ScheduleEntry> entryMasterList = ScheduleEntry.utils().getScheduleMasterList(snapshot);
-            return ListView.builder(itemCount: entryMasterList.length,itemBuilder: (context, index) {
-              return Card(
-      //TODO: Create card of schedule data
-              );
-            });
+            List<ScheduleEntry> entryMasterList =
+                ScheduleEntry.utils().getScheduleMasterList(snapshot);
+            return Expanded(
+              child: ListView.builder(
+                  itemCount: entryMasterList.length,
+                  itemBuilder: (context, index) {
+                    return Card(
+                      elevation: 5,
+                      child: Padding(
+                          padding: const EdgeInsets.only(left: 12),
+                          child: RichText(
+                            text: TextSpan(
+                                text:
+                                    "${entryMasterList[index].role}${" "}${entryMasterList[index].location}${"\n"}",
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Colors.black),
+                                children: <TextSpan>[
+                                  TextSpan(
+                                      text:
+                                          "${entryMasterList[index].weekday}${", "}${DateTimeUtils().getMonthFromDateTime(entryMasterList[index].day)}${" "}${entryMasterList[index].day.day}${DateTimeUtils().getSuffixFromDateTime(entryMasterList[index].day)}${"\n"}",
+                                      style: const TextStyle(fontSize: 24)),
+                                  TextSpan(
+                                      text:
+                                          "${entryMasterList[index].startTime}  to  "
+                                          "${entryMasterList[index].endTime}"),
+                                ]),
+                          )),
+                    );
+                  }),
+            );
           }
-
         });
   }
 
@@ -119,7 +179,7 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
     Navigator.push(
         //FullFormCalender()
         context,
-        MaterialPageRoute(builder: (context) => FullFormCalender()));
+        MaterialPageRoute(builder: (context) => const FullFormCalender()));
     Fluttertoast.showToast(
         msg: 'Make me do something!!!',
         gravity: ToastGravity.BOTTOM,
@@ -151,6 +211,8 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
 
     return days;
   }
+
+  void applyFilter() {}
 }
 
 class FullFormCalender extends StatefulWidget {
@@ -160,12 +222,15 @@ class FullFormCalender extends StatefulWidget {
 }
 
 class _FullFormCalenderState extends State<FullFormCalender> {
+  ///Initializing the data to set the date to today on the calender
   List<DateTime?> _date = [
     DateTime.now(),
   ];
   TimeOfDay _start =
       TimeOfDay.fromDateTime(DateTime(1989, 2, 2, 9, 0, 0, 0, 0));
   TimeOfDay _end = TimeOfDay.fromDateTime(DateTime(1989, 2, 2, 17, 0, 0, 0, 0));
+
+  ///Initialing a 'blank' schedule entry to be filled out by the form
   ScheduleEntry myScheduleEntry = ScheduleEntry(
       "Bellperson",
       "CS",
@@ -175,6 +240,7 @@ class _FullFormCalenderState extends State<FullFormCalender> {
       ScheduleFlags(),
       DateTime.now(),
       DateTimeUtils().getWeekdayFromDateTime(DateTime.now()));
+
   @override
   void initState() {
     super.initState();
@@ -185,7 +251,7 @@ class _FullFormCalenderState extends State<FullFormCalender> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Add Schedule'), // Set your app title here
+          title: const Text('Add Schedule'),
         ),
         body: ListView(
           children: [
@@ -198,6 +264,9 @@ class _FullFormCalenderState extends State<FullFormCalender> {
 
   initialize() {}
 
+  ///Create a calender. The original date should be set to the current date
+  ///and is moved to the lambda value from setState when onValueChanged is triggered by the user.
+  ///The day and weekday are updated accordingly for the Schedule Entry.
   calender() {
     return CalendarDatePicker2(
       config: CalendarDatePicker2Config(
@@ -212,6 +281,8 @@ class _FullFormCalenderState extends State<FullFormCalender> {
     );
   }
 
+  ///Sets the Schedule Entry to have the data from the Start time and End time based
+  ///on the ranges chosen by the user.
   timePicker() {
     return Padding(
         padding: const EdgeInsets.all(10),
@@ -241,6 +312,9 @@ class _FullFormCalenderState extends State<FullFormCalender> {
         ]));
   }
 
+  shiftFlags() {}
+
+  ///Creates a String representation of all the data for the Schedule Entry and displays it to the user.
   shiftList() {
     return Text("${"My Shift\n"}"
         "${myScheduleEntry.role}${" "}${myScheduleEntry.location}${"\n"}"
@@ -264,7 +338,7 @@ class _FullFormCalenderState extends State<FullFormCalender> {
   postShift() {
     myScheduleEntry.createScheduleDayInFirebase();
     Fluttertoast.showToast(
-        msg: 'Post a Shift Here!',
+        msg: 'Shift is Posting!',
         gravity: ToastGravity.BOTTOM,
         toastLength: Toast.LENGTH_SHORT);
   }

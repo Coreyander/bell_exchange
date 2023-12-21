@@ -2,19 +2,25 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../app_utils.dart';
+import '../authentication/auth_service.dart';
 import 'ExchangeScreen.dart';
 import 'SignUpScreen.dart';
+import 'package:flutter_signin_button/flutter_signin_button.dart';
 
 class LogInScreen extends StatefulWidget {
+  static const String routeName = '/login';
   const LogInScreen({super.key, required this.title});
   final String title;
 
   @override
   State<LogInScreen> createState() => _LogInScreenState();
+
 }
 
 class _LogInScreenState extends State<LogInScreen> {
-
+  final AuthService _authService = AuthService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   bool isChecked = false;
   String rememberedName = '';
   String rememberedPass = '';
@@ -72,24 +78,6 @@ class _LogInScreenState extends State<LogInScreen> {
     }
   }
 
-  //authentication with 'test' 'test'
-  auth() {
-    toast();
-    String givenUsername = _usernameController.text.toLowerCase();
-    String givenPassword = _passwordController.text;
-    if (givenUsername == 'test' && givenPassword == 'test') {
-      Navigator.push(context,
-          MaterialPageRoute(builder: (context) => const ExchangeScreen()));
-    }
-  }
-
-  toast() {
-    Fluttertoast.showToast(
-        msg: 'Button Pressed!',
-        gravity: ToastGravity.BOTTOM,
-        toastLength: Toast.LENGTH_SHORT);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,7 +88,8 @@ class _LogInScreenState extends State<LogInScreen> {
               usernameTextField(),
               passwordTextField(),
               rememberMeCheckbox(),
-              buttonBar()
+              buttonBar(),
+              googleSignInButton()
             ],
           ),
         ),
@@ -163,6 +152,24 @@ class _LogInScreenState extends State<LogInScreen> {
             child: const Text('Sign Up'))
       ],
     ));
+  }
+
+  googleSignInButton() {
+    return SignInButton(
+      Buttons.Google,
+      onPressed: () async {
+        User? user = await _authService.signInWithGoogle();
+
+        if (user != null) {
+          AppUtils().toastie('User signed in: ${user.displayName}');
+          if(context.mounted) {
+            Navigator.popAndPushNamed(context, '/exchange');
+          }
+        } else {
+          AppUtils().toastie('Google Sign-In failed or was canceled.');
+        }
+      },
+    );
   }
 
   Future<void> loadCheckboxState() async {
