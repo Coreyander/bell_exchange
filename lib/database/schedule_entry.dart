@@ -10,6 +10,7 @@ import 'package:flutter/cupertino.dart';
 import '../datetime_utils.dart';
 
 class ScheduleEntry {
+  String documentId = '';
   String role = '';
   String location = '';
   String startTime = '';
@@ -25,6 +26,7 @@ class ScheduleEntry {
 
   // Object Data structure
   ScheduleEntry(
+      this.documentId,
       this.role,
       this.location,
       this.startTime,
@@ -36,8 +38,10 @@ class ScheduleEntry {
       );
 
   //Firebase Data structure
+  ///This takes the data of and object and adds it to a map suitable for parsing to Firebase
   Map<String, dynamic> parseToFirebaseDataStructure() {
     return {
+      'documentId': documentId,
       'role': role,
       'location': location,
       'startTime': startTime,
@@ -56,17 +60,39 @@ class ScheduleEntry {
   Future<void> createScheduleDayInFirebase() async {
     CollectionReference scheduleMasterList = FirebaseFirestore.instance.collection('schedule_master_list');
     Map<String, dynamic> scheduleData = parseToFirebaseDataStructure();
-    await scheduleMasterList.doc("$user${"-"}${DateTimeUtils().getMonthFromDateTime(day)}${"-"}${DateTimeUtils().getWeekdayFromDateTime(day)}${"-"}${DateTime.now().year}").set(scheduleData);
+    await scheduleMasterList.doc(documentId).set(scheduleData);
   }
 
   changeScheduleDayInFirebase() {}
-  deleteScheduleDayInFirebase() {}
+  deleteScheduleDayInFirebase(List<ScheduleEntry> entryMasterList) async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    for(ScheduleEntry entry in entryMasterList) {
+      if(entry.day.isBefore(DateTime.now())) {
+        try {
+          DocumentReference documentReference = firestore.collection('schedule_master_list').doc(entry.documentId);
+          DocumentSnapshot documentSnapshot = await documentReference.get();
+          if (documentSnapshot.exists) {
+            await documentReference.delete();
+            print('Document with ID $documentId deleted successfully.');
+          } else {
+            print('Document with ID $documentId does not exist.');
+          }
+        } catch (e) {
+          print('Error deleting document: $e');
+        }
+      }
+  }
+
+  }
 
   ///Takes a schedule entry from Firebase and parses it to a data object ScheduleEntry
   List<ScheduleEntry> getScheduleMasterList(AsyncSnapshot<QuerySnapshot> snapshot) {
     List<ScheduleEntry> entryMasterList = snapshot.data!.docs.map((DocumentSnapshot doc) {
       Map<String, dynamic> docData = doc.data() as Map<String, dynamic>;
-      return ScheduleEntry(docData['role'] ?? '',
+
+      return ScheduleEntry(
+          docData['documentId'] ?? '',
+          docData['role'] ?? '',
           docData['location'] ?? '',
           docData['startTime'] ?? '',
           docData['endTime'] ?? '',
@@ -75,13 +101,15 @@ class ScheduleEntry {
           docData['day'].toDate(), //Expecting a TimeStamp
           docData['weekday'] ?? '');
     }).toList();
+    deleteScheduleDayInFirebase(entryMasterList);
     return entryMasterList;
   }
 }
 
-///To update flags, it must be added in the class as a bool, in the toMap() function as
+///To update the code for ScheduleFlags, it must be added in the class as a bool, in the toMap() function as
 ///a key/value pair (to parse to Firebase), and in the factory function (to parse back into a ScheduleEntry)
 class ScheduleFlags {
+
   bool overnight = false;
   bool morning = false;
   bool evening = false;

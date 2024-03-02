@@ -1,3 +1,5 @@
+
+
 import 'package:bell_exchange/screens/SettingsScreen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import 'Screens/CreateUserScreen.dart';
+import 'Screens/UpdateUserScreen.dart';
 
 class FirebaseUtils {
   /*
@@ -35,6 +37,36 @@ class FirebaseUtils {
 
   authUserWithFacebook() {}
 
+  Future<DocumentSnapshot> getUserDocument(String userId) async {
+    try {
+      DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
+          .collection('user_database')
+          .doc(userId)
+          .get();
+      return documentSnapshot;
+    } catch (e) {
+      print('Error getting user document: $e');
+      throw e;
+    }
+
+  }
+
+  Future<Map<String, dynamic>> getUserData() async {
+    Map<String, dynamic> userData = {};
+    FirebaseAuth auth = FirebaseAuth.instance;
+    String userId = getCurrentUserID(auth);
+    DocumentSnapshot userDocument = await getUserDocument(userId);
+    if (userDocument.exists) {
+      userData = userDocument.data() as Map<String, dynamic>? ?? {};
+      return userData;
+    } else {
+      print('User document does not exist');
+      return userData;
+    }
+  }
+
+
+
   String getCurrentUserID(FirebaseAuth auth) {
     User? user = auth.currentUser;
     if (user != null) {
@@ -44,6 +76,75 @@ class FirebaseUtils {
       // No user is signed in
       return '';
     }
+  }
+
+  ///Gets the name of the current active user logged in the app
+  Future<String> getCurrentUserName() async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    FirebaseAuth auth = FirebaseAuth.instance;
+    User? user = auth.currentUser;
+
+    if (user != null) {
+      CollectionReference usersCollection = firestore.collection('user_database');
+      DocumentSnapshot documentSnapshot = await usersCollection.doc(user.uid).get();
+      Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
+      if (data != null && data.containsKey('name')) {
+        String name = data['name'];
+        print(name);
+        return name;
+      } else {
+        return 'Name not found';
+      }
+    } else {
+      return 'No User Signed On';
+    }
+  }
+
+  Future<String> getUserName(String userId) async {
+    DocumentSnapshot documentSnapshot = await getUserDocument(userId);
+    Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
+    if (data != null && data.containsKey('name')) {
+      String name = data['name'];
+      return name;
+    } else {
+      return 'Name not found';
+    }
+  }
+
+
+  ///Requires a document reference for a user. Updates that user's name data.
+  Future<void> updateName(DocumentReference userDocumentRef, String name) async {
+    try {
+      await userDocumentRef.update({'name': name});
+      print('Name updated successfully');
+    } catch (error) {
+      print('Error updating name: $error');
+    }
+  }
+  ///Requires a document reference for a user. Updates that user's hubID data.
+  Future<void> updateHubId(DocumentReference userDocumentRef, String hubId) async {
+    try {
+      await userDocumentRef.update({'hubID': hubId});
+      print('HubID updated successfully');
+    } catch (error) {
+      print('Error updating HubID: $error');
+    }
+  }
+  ///Requires a document reference for a user. Updates that user's perner data.
+  Future<void> updatePerner(DocumentReference userDocumentRef, String perner) async {
+    try {
+      await userDocumentRef.update({'perner': perner});
+      print('Perner updated successfully');
+    } catch (error) {
+      print('Error updating Perner: $error');
+    }
+  }
+
+  CollectionReference<Object?> getChatroomsForUser(String userId) {
+    CollectionReference userCollection = FirebaseFirestore.instance.collection('user_data');
+    DocumentReference userDocRef = userCollection.doc(userId);
+    CollectionReference chatRoomsCollection = userDocRef.collection('chatrooms');
+    return chatRoomsCollection;
   }
 
   signOff() async {
@@ -68,5 +169,21 @@ class FirebaseUtils {
           textColor: Colors.white);
     }
     filterFeed() {}
+  }
+
+  Future<void> deleteCurrentUser() async {
+    try {
+      FirebaseAuth auth = FirebaseAuth.instance;
+      User? user = auth.currentUser;
+      DocumentReference userDocRef = FirebaseFirestore.instance.collection('user_database').doc(user?.uid);
+      if (user != null) {
+        await userDocRef.delete();
+        await user.delete();
+      } else {
+        print('No user signed in.');
+      }
+    } catch (error) {
+      print('Error deleting user account: $error');
+    }
   }
 }

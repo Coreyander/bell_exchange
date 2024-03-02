@@ -1,6 +1,7 @@
 import 'package:bell_exchange/firebase_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../app_utils.dart';
 import '../database/my_user.dart';
 import 'ExchangeScreen.dart';
 
@@ -14,13 +15,13 @@ enum Role { bellperson, dispatcher}
 
 FirebaseAuth auth = FirebaseAuth.instance;
 
-class CreateUserScreen extends StatefulWidget {
-  const CreateUserScreen({super.key});
+class UpdateUserScreen extends StatefulWidget {
+  const UpdateUserScreen({super.key});
   @override
-  State<CreateUserScreen> createState() => _CreateUserScreenState();
+  State<UpdateUserScreen> createState() => _UpdateUserScreenState();
 }
 
-class _CreateUserScreenState extends State<CreateUserScreen> {
+class _UpdateUserScreenState extends State<UpdateUserScreen> {
   //Layout Thematics
   final double left = 5;
   final double top = 12;
@@ -30,7 +31,6 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
   //State Variables
   Role selectedRole = Role.bellperson;
   String selectedRoleText = '';
-  String userID = FirebaseUtils().getCurrentUserID(auth);
   TextEditingController nameController = TextEditingController();
   TextEditingController hubIDController = TextEditingController();
   TextEditingController pernerController = TextEditingController();
@@ -125,13 +125,22 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
   }
 
   onPress() {
-      MyUser user = MyUser(userID, nameController.text, selectedRoleText, hubIDController.text, pernerController.text);
-      user.createUserInFirebase();
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => const ExchangeScreen()));
-    //TODO: Create Flag choices, right now they are all set to False
+    try {
+      String userID = FirebaseAuth.instance.currentUser!.uid;
+      if(userID.isNotEmpty) {
+        MyUser myUser = MyUser(
+            userID, nameController.text, selectedRoleText, hubIDController.text,
+            pernerController.text);
+        myUser.updateUserInFirebase();
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const ExchangeScreen()));
+        //TODO: Create Flag choices, right now they are all set to False
+      }
+    } catch(E) {
+      AppUtils().toastie("User not found. Please Log Out and try again.");
+    }
   }
 
 }

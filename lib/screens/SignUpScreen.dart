@@ -1,10 +1,17 @@
+import 'dart:async';
+
+import 'package:bell_exchange/Screens/LogInScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:email_validator/email_validator.dart';
 
-import 'CreateUserScreen.dart';
+import '../animations/transitions.dart';
+import '../app_utils.dart';
+import '../database/my_user.dart';
+import 'SignUpSplashScreen.dart';
+import 'UpdateUserScreen.dart';
 import 'ExchangeScreen.dart';
 //TODO: Create error states for the fields
 //TODO: Check Firebase for duplicate User ID & add error on dupe
@@ -20,7 +27,18 @@ class SignUpScreen extends StatefulWidget {
   State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _SignUpScreenState extends State<SignUpScreen>
+    with TickerProviderStateMixin {
+  //Animations
+  Transitions transitions = Transitions();
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  //Layout Thematics
+  final double left = 5;
+  final double top = 12;
+  final double right = 5;
+  final double bottom = 12;
 
   //Controllers
   final TextEditingController _usernameController = TextEditingController();
@@ -46,129 +64,86 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final FocusNode _displayNameFocusNode = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 2),
+    );
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
+    Timer(Duration(seconds: 1), () {
+      _controller.forward();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: Center(
-            child: SafeArea(
-                child: ListView(children: <Widget>[
-      Padding(
-          padding: const EdgeInsets.fromLTRB(5, 12, 5, 12),
-          child: Column(
-            children: <Widget>[
-              signUpInstructions(),
-              userNameText(),
-              userNameField()
-            ],
-          )),
-      Padding(
-          padding: const EdgeInsets.fromLTRB(5, 12, 5, 12),
-          child: Column(children: [passwordText(), passwordField()])),
-      Padding(
-          padding: const EdgeInsets.fromLTRB(5, 12, 5, 12),
-          child: Column(
-              children: [confirmPasswordText(), confirmPasswordField()])),
-      displayNameText(),
-      displayNameFieldAndButton(),
-      submitButtonBar()
-    ]))));
-  }
-
-  signUpInstructions() {
-    return const Column(children: [
-      Text(
-        'Welcome to the Bell Exchange!\n\n',
-        textScaleFactor: 1.4,
-        textAlign: TextAlign.center,
-      ),
-      Text(
-        'Set Email and Password to sign in with below.\n',
-        textAlign: TextAlign.start,
-      ),
-    ]);
-  }
-
-  userNameText() {
-    return Text('Enter Email: ',
-        textScaleFactor: _textScaleFactor['userNameTextFactor'] ?? 1.0);
-  }
-
-  userNameField() {
-    return Focus(
-        onFocusChange: (hasFocus) {
-          if (hasFocus) {
-            setState(() {
-              _textScaleFactor['userNameTextFactor'] = 1.3;
-            });
-          } else {
-            setState(() {
-              _textScaleFactor['userNameTextFactor'] = 1.0;
-            });
-          }
-        },
-        child: TextField(
-          controller: _usernameController,
-          focusNode: _userNameFocusNode,
-          textAlign: TextAlign.center,
-          maxLength: 25,
-        ));
-  }
-
-  passwordText() {
-    return Text('Enter Password: ',
-        textScaleFactor: _textScaleFactor['passwordTextFactor'] ?? 1.0);
-  }
-
-  passwordField() {
-    return Focus(
-      onFocusChange: (hasFocus) {
-        if (hasFocus) {
-          setState(() {
-            _passwordHintText = '';
-            _textScaleFactor['passwordTextFactor'] = 1.3;
-          });
-        } else {
-          setState(() {
-            print('lost focus'); //DEBUG
-            _passwordHintText = 'password must be at least 8 characters long';
-            _textScaleFactor['passwordTextFactor'] = 1.0;
-          });
-        }
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pushReplacement(context,
+          transitions.slide(const LogInScreen(title: "title",), 250, 1, 0),
+        );
+        return true;
       },
-      child: TextField(
-        controller: _passwordController,
-        focusNode: _passwordFocusNode,
-        textAlign: TextAlign.center,
-        obscureText: true,
-        maxLength: 100,
-        decoration: InputDecoration(hintText: _passwordHintText),
+      child: Scaffold(
+        body: Center(
+          child: SafeArea(
+            child: FadeTransition(
+              opacity: _animation,
+              child: ListView(
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(5, 12, 5, 12),
+                    child: Column(
+                      children: <Widget>[
+                        userNameTextField(),
+                        passwordTextField(),
+                        confirmPasswordTextField(),
+                      ],
+                    ),
+                  ),
+                  displayNameText(),
+                  displayNameFieldAndButton(),
+                  submitButtonBar(),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  confirmPasswordText() {
-    return Text('Confirm Password: ',
-        textScaleFactor: _textScaleFactor['confirmTextFactor'] ?? 1.0);
+  userNameTextField() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(left, top, right, bottom),
+      child: TextField(
+        controller: _usernameController,
+        decoration: const InputDecoration(labelText: 'Username'),
+      ),
+    );
   }
 
-  confirmPasswordField() {
-    return Focus(
-        onFocusChange: (hasFocus) {
-          if (hasFocus) {
-            setState(() {
-              _textScaleFactor['confirmTextFactor'] = 1.3;
-            });
-          } else {
-            setState(() {
-              _textScaleFactor['confirmTextFactor'] = 1.0;
-            });
-          }
-        },
-        child: TextField(
-          controller: _confirmPasswordController,
-          focusNode: _confirmPasswordFocusNode,
-          obscureText: true,
-          textAlign: TextAlign.center,
-        ));
+  passwordTextField() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(left, top, right, bottom),
+      child: TextField(
+        controller: _passwordController,
+        decoration: const InputDecoration(
+            labelText: 'Password',
+            hintText: 'password must be at least 8 characters long'),
+      ),
+    );
+  }
+
+  confirmPasswordTextField() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(left, top, right, bottom),
+      child: TextField(
+        controller: _confirmPasswordController,
+        decoration: const InputDecoration(labelText: 'Confirm Password'),
+      ),
+    );
   }
 
   displayNameText() {
@@ -188,25 +163,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
             textAlign: TextAlign.center,
             maxLength: 25,
           )),
-     // Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-     //   Padding(
-     //       padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-     //       child: SizedBox(
-     //         height: 30,
-     //         width: 30,
-     //         child: CheckMark(
-     //           active: _usernameAsDisplayIsChecked,
-     //           curve: Curves.decelerate,
-     //           duration: const Duration(milliseconds: 500),
-     //         ),
-     //       )),
-     //   ElevatedButton(
-     //       onPressed: () => displayNameButtonPressed(),
-     //       child: const Text('Use Email as Display Name'))
-     // ]),
+      // Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      //   Padding(
+      //       padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+      //       child: SizedBox(
+      //         height: 30,
+      //         width: 30,
+      //         child: CheckMark(
+      //           active: _usernameAsDisplayIsChecked,
+      //           curve: Curves.decelerate,
+      //           duration: const Duration(milliseconds: 500),
+      //         ),
+      //       )),
+      //   ElevatedButton(
+      //       onPressed: () => displayNameButtonPressed(),
+      //       child: const Text('Use Email as Display Name'))
+      // ]),
     ]);
   }
-
 
   /// This was a button that changed display name to match the username,
   /// however later I realized that Firebase only auths password with email addresses.
@@ -256,15 +230,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   submitButtonBarPushed() {
     if (_passwordController.text == _confirmPasswordController.text &&
-        _passwordController.text.length >= 8 && _usernameController.text != '') {
+        _passwordController.text.length >= 8 &&
+        _usernameController.text != '') {
       var email = _usernameController.text;
-      if(EmailValidator.validate(email)) {
+      if (EmailValidator.validate(email)) {
         registerUser(_usernameController.text, _passwordController.text);
         Navigator.pop(context);
         Navigator.push(context,
-            MaterialPageRoute(builder: (context) => const CreateUserScreen()));
-      }
-      else {
+            MaterialPageRoute(builder: (context) => const UpdateUserScreen()));
+      } else {
         Fluttertoast.showToast(
             msg: 'Invalid email!',
             gravity: ToastGravity.BOTTOM,
@@ -281,16 +255,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   void registerUser(String userName, String password) async {
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      UserCredential userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: userName,
         password: password,
       );
 
       // User registered successfully
       User user = userCredential.user!;
+      String userID = FirebaseAuth.instance.currentUser!.uid;
+      MyUser myUser = MyUser(userID, '', '', '', '');
+      myUser.createUserInFirebase();
+      AppUtils().toastie('User registered: ${user.uid}');
       print('User registered: ${user.uid}');
     } catch (e) {
       // Handle registration errors
+      AppUtils().toastie('Error during registration: $e');
       print('Error during registration: $e');
     }
   }

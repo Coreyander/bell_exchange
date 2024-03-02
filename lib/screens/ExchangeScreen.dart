@@ -1,4 +1,7 @@
+import 'package:bell_exchange/database/my_user.dart';
 import 'package:bell_exchange/database/schedule_entry.dart';
+import 'package:bell_exchange/firebase_utils.dart';
+import 'package:bell_exchange/widgets/shiftlist_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -6,8 +9,11 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:time_range/time_range.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
+import '../app_utils.dart';
 import '../datetime_utils.dart';
 import '../widgets/checkbox_panel.dart';
+import '../widgets/location_radio_panel.dart';
+import '../widgets/radio_panel.dart';
 
 /// Move the controller variables and focus date into individual cards so that they all have their own data
 /// You can potentially do this by creating custom card class to send the variables to.
@@ -21,20 +27,23 @@ class ExchangeScreen extends StatefulWidget {
 
 class _ExchangeScreenState extends State<ExchangeScreen> {
   final List<bool> _isExpanded = [false];
-
+  FirebaseAuth auth = FirebaseAuth.instance;
+  FirebaseUtils utils = FirebaseUtils();
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(title: const Center(child: Text('Exchange'))),
-      endDrawer: mySchedule(),
-      body:
-          Center(child: Column(children: <Widget>[filters(), exchangeFeed()])),
+      endDrawer: exchangeDrawer(),
+      body: Center(
+        child: Column(children: <Widget>[filters(), exchangeFeed()]),
+      ),
       backgroundColor: Theme.of(context).canvasColor,
       floatingActionButton: fab(),
     );
   }
 
-  mySchedule() {
+  exchangeDrawer() {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -43,51 +52,40 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
             decoration: const BoxDecoration(
               color: Colors.blue,
             ),
-            child: Row(
+            child: Column(
               children: [
-                ElevatedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/settings'),
-                    child: const Row(
-                      children: [Icon(Icons.settings), Text("Settings")],
-                    )),
+                  Icon(Icons.person_2_rounded),
+                FutureBuilder<String>(
+                  future: utils.getCurrentUserName(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    } else if (snapshot.hasError) {
+                      return Text('Error: ${snapshot.error}');
+                    } else {
+                      String userName = snapshot.data!;
+                      return Text(userName);
+                    }
+                  },
+                ),
               ],
             ),
           ),
-          ExpansionTile(
-            title: const Text('Messages'),
-            children: <Widget>[
-              ListTile(
-                title: Text(""),
-                onTap: () {
-                  // Handle subitem 1 tap
-                },
-              ),
-              ListTile(
-                title: const Text('Subitem 2'),
-                onTap: () {
-                  // Handle subitem 2 tap
-                },
-              ),
-            ],
-          ),
-          ExpansionTile(
-            title: const Text('My Schedule'),
-            children: <Widget>[
-              for (var i in Iterable.generate(14))
-                ExpansionTile(
-                  title: Text(
-                      '${getDays().elementAt(i)} ${getDates().elementAt(i)}'),
-                  initiallyExpanded: i == 0,
-                  children: <Widget>[
-                    ListTile(
-                        title: const Text('Add +'),
-                        onTap: () {
-                          // Handle subitem 2 tap
-                        }),
-                  ],
-                )
-            ],
-          ),
+          ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, '/settings'),
+              child: const Row(
+                children: [Icon(Icons.settings), Text("Settings")],
+              )),
+          ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, '/settings'),
+              child: const Row(
+                children: [Icon(Icons.mail_outline), Text("Messages")],
+              )),
+          ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, '/settings'),
+              child: const Row(
+                children: [Icon(Icons.photo_album_rounded), Text("My Profile")],
+              )),
         ],
       ),
     );
@@ -110,7 +108,6 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
               ElevatedButton(
                   onPressed: () => setState(() {
                         _isExpanded[0] = false;
-                        applyFilter();
                       }),
                   child: const Text('Apply'))
             ]),
@@ -121,49 +118,35 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
 
   exchangeFeed() {
     return StreamBuilder(
-        stream: FirebaseFirestore.instance
-            .collection("/schedule_master_list")
-            .snapshots(),
-        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator();
-          } else if (snapshot.hasError) {
-            return Text('Error: ${snapshot.error}');
-          } else {
-            List<ScheduleEntry> entryMasterList =
-                ScheduleEntry.utils().getScheduleMasterList(snapshot);
-            return Expanded(
-              child: ListView.builder(
-                  itemCount: entryMasterList.length,
-                  itemBuilder: (context, index) {
-                    return Card(
-                      elevation: 5,
-                      child: Padding(
-                          padding: const EdgeInsets.only(left: 12),
-                          child: RichText(
-                            text: TextSpan(
-                                text:
-                                    "${entryMasterList[index].role}${" "}${entryMasterList[index].location}${"\n"}",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: Colors.black),
-                                children: <TextSpan>[
-                                  TextSpan(
-                                      text:
-                                          "${entryMasterList[index].weekday}${", "}${DateTimeUtils().getMonthFromDateTime(entryMasterList[index].day)}${" "}${entryMasterList[index].day.day}${DateTimeUtils().getSuffixFromDateTime(entryMasterList[index].day)}${"\n"}",
-                                      style: const TextStyle(fontSize: 24)),
-                                  TextSpan(
-                                      text:
-                                          "${entryMasterList[index].startTime}  to  "
-                                          "${entryMasterList[index].endTime}"),
-                                ]),
-                          )),
-                    );
-                  }),
-            );
-          }
-        });
+      stream: FirebaseFirestore.instance
+          .collection("/schedule_master_list")
+          .snapshots(),
+      builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else {
+          List<ScheduleEntry> entryMasterList =
+              ScheduleEntry.utils().getScheduleMasterList(snapshot);
+          return Expanded(
+              child: RefreshIndicator(
+            onRefresh: () async {
+              entryMasterList = ScheduleEntry.utils().getScheduleMasterList(snapshot);
+              return Future.delayed(const Duration(seconds: 1));
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.only(
+                  top: 15.0, bottom: 90.0, left: 5.0, right: 5.0),
+              itemCount: entryMasterList.length,
+              itemBuilder: (context, index) {
+                return ShiftlistCard(entry: entryMasterList[index]);
+              },
+            ),
+          ));
+        }
+      },
+    );
   }
 
   fab() {
@@ -211,8 +194,6 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
 
     return days;
   }
-
-  void applyFilter() {}
 }
 
 class FullFormCalender extends StatefulWidget {
@@ -222,6 +203,8 @@ class FullFormCalender extends StatefulWidget {
 }
 
 class _FullFormCalenderState extends State<FullFormCalender> {
+  final List<bool> _isExpanded = [false, false];
+
   ///Initializing the data to set the date to today on the calender
   List<DateTime?> _date = [
     DateTime.now(),
@@ -231,8 +214,10 @@ class _FullFormCalenderState extends State<FullFormCalender> {
   TimeOfDay _end = TimeOfDay.fromDateTime(DateTime(1989, 2, 2, 17, 0, 0, 0, 0));
 
   ///Initialing a 'blank' schedule entry to be filled out by the form
+  /// Initial role must match the first radio button in role selection (Currently: Dispatcher)
   ScheduleEntry myScheduleEntry = ScheduleEntry(
-      "Bellperson",
+      "",
+      "",
       "CS",
       "",
       "",
@@ -256,7 +241,13 @@ class _FullFormCalenderState extends State<FullFormCalender> {
         body: ListView(
           children: [
             Column(
-              children: [calender(), timePicker(), shiftList(), buttonBar()],
+              children: [
+                calender(),
+                timePicker(),
+                shiftFlags(),
+                shiftList(),
+                buttonBar()
+              ],
             ),
           ],
         ));
@@ -312,7 +303,64 @@ class _FullFormCalenderState extends State<FullFormCalender> {
         ]));
   }
 
-  shiftFlags() {}
+  shiftFlags() {
+    Map<String, dynamic> flagMap = myScheduleEntry.flags.toMap();
+    return ExpansionPanelList(
+      expansionCallback: (int index, bool isExpanded) {
+        setState(() {
+          _isExpanded[index] = isExpanded;
+        });
+      },
+      children: [
+        ExpansionPanel(
+            headerBuilder: (BuildContext context, bool isExpanded) {
+              return const ListTile(title: Text('Role'));
+            },
+            body: Column(children: [
+              RadioPanel(onRoleSelected: (String role) {
+                setState(() {
+                  myScheduleEntry.role = role;
+                });
+              }, onFlagSelected: (Map<String, bool> flag) {
+                setState(() {
+                  flagMap.forEach((key, value) {
+                    if (flag.containsKey('shuttle')) {
+                      myScheduleEntry.flags.shuttle = flag.values.first;
+                    } else if (flag.containsKey('greeter')) {
+                      myScheduleEntry.flags.greeter = flag.values.first;
+                    } else if (flag.containsKey('transfer')) {
+                      myScheduleEntry.flags.transfer = flag.values.first;
+                    }
+                  });
+                });
+              }),
+              ElevatedButton(
+                  onPressed: () => setState(() {
+                        _isExpanded[0] = false;
+                      }),
+                  child: const Text('Apply'))
+            ]),
+            isExpanded: _isExpanded[0]),
+        ExpansionPanel(
+            headerBuilder: (BuildContext context, bool isExpanded) {
+              return const ListTile(title: Text('Location'));
+            },
+            body: Column(children: [
+              LocationRadioPanel(
+                onLocationSelect: (String location) {
+                  myScheduleEntry.location = location;
+                },
+              ),
+              ElevatedButton(
+                  onPressed: () => setState(() {
+                        _isExpanded[1] = false;
+                      }),
+                  child: const Text('Apply'))
+            ]),
+            isExpanded: _isExpanded[1])
+      ],
+    );
+  }
 
   ///Creates a String representation of all the data for the Schedule Entry and displays it to the user.
   shiftList() {
@@ -320,7 +368,10 @@ class _FullFormCalenderState extends State<FullFormCalender> {
         "${myScheduleEntry.role}${" "}${myScheduleEntry.location}${"\n"}"
         "${myScheduleEntry.weekday}${", "}${DateTimeUtils().getMonthFromDateTime(_date[0]!)}${" "}${myScheduleEntry.day.day}${DateTimeUtils().getSuffixFromDateTime(_date[0]!)}${"\n"}"
         "${_start.hour.toString().padLeft(2, "0")}${":"}${_start.minute.toString().padLeft(2, "0")}  to  "
-        "${_end.hour.toString().padLeft(2, "0")}${":"}${_end.minute.toString().padLeft(2, "0")}");
+        "${_end.hour.toString().padLeft(2, "0")}${":"}${_end.minute.toString().padLeft(2, "0")}${"\n"}"
+        "${"Transfers? "}${myScheduleEntry.flags.transfer}${"\n"}"
+        "${"Greeter? "}${myScheduleEntry.flags.greeter}${"\n"}"
+        "${"Shuttles? "}${myScheduleEntry.flags.shuttle}${"\n"}");
   }
 
   buttonBar() {
@@ -336,11 +387,21 @@ class _FullFormCalenderState extends State<FullFormCalender> {
   }
 
   postShift() {
-    myScheduleEntry.createScheduleDayInFirebase();
-    Fluttertoast.showToast(
-        msg: 'Shift is Posting!',
-        gravity: ToastGravity.BOTTOM,
-        toastLength: Toast.LENGTH_SHORT);
+    if (myScheduleEntry.role == "") {
+      AppUtils().toastie("Please Select a Role!");
+    } else if (myScheduleEntry.location == "") {
+      AppUtils().toastie("Please Select a Location!");
+    } else {
+      if (myScheduleEntry.user == "") {
+        AppUtils().toastie("Unable to post shift, user not found.");
+      } else {
+        myScheduleEntry.documentId =
+            "${myScheduleEntry.user.toString()}${"-"}${DateTimeUtils().getMonthFromDateTime(myScheduleEntry.day)}${"-"}${DateTimeUtils().getWeekdayFromDateTime(myScheduleEntry.day)}${"-"}${DateTime.now().year}";
+        myScheduleEntry.createScheduleDayInFirebase();
+        AppUtils().toastie(myScheduleEntry.documentId.toString());
+        AppUtils().toastie('Shift is Posting!');
+      }
+    }
   }
 
   addShift() {

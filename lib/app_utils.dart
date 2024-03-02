@@ -18,8 +18,8 @@ class AppUtils {
   popStackAndReturnToSignIn(BuildContext context) {
     Navigator.pushNamedAndRemoveUntil(
       context,
-      '/login', // replace with the route name of your LogInScreen
-          (route) => false, // this predicate will remove all routes
+      '/login',
+          (route) => false
     );
   }
 }

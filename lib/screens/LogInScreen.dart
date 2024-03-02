@@ -1,24 +1,29 @@
+import 'package:bell_exchange/animations/transitions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../app_utils.dart';
 import '../authentication/auth_service.dart';
+import '../database/my_user.dart';
 import 'ExchangeScreen.dart';
 import 'SignUpScreen.dart';
 import 'package:flutter_signin_button/flutter_signin_button.dart';
 
-class LogInScreen extends StatefulWidget {
+import 'SignUpSplashScreen.dart';
+
+class LogInScreen extends StatefulWidget with RouteAware {
   static const String routeName = '/login';
   const LogInScreen({super.key, required this.title});
   final String title;
 
   @override
   State<LogInScreen> createState() => _LogInScreenState();
-
 }
 
-class _LogInScreenState extends State<LogInScreen> {
+class _LogInScreenState extends State<LogInScreen> with RouteAware {
+  Transitions transitions = Transitions();
   final AuthService _authService = AuthService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool isChecked = false;
@@ -34,7 +39,7 @@ class _LogInScreenState extends State<LogInScreen> {
     super.initState();
     loadCheckboxState();
     loadRememberedUser();
-    if(isChecked) {
+    if (isChecked) {
       _usernameController.text = rememberedName;
       _passwordController.text = rememberedPass;
     }
@@ -54,15 +59,16 @@ class _LogInScreenState extends State<LogInScreen> {
       if (userCredential.user != null) {
         // Authentication successful, navigate to ExchangeScreen
         if (context.mounted) {
-          updateRememberedUser(_usernameController.text, _passwordController.text);
+          updateRememberedUser(
+              _usernameController.text, _passwordController.text);
+          Navigator.pop(context);
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => const ExchangeScreen()));
         }
       } else {
         Fluttertoast.showToast(
             msg: "Log In Failed.",
-            toastLength: Toast
-                .LENGTH_SHORT,
+            toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.BOTTOM,
             backgroundColor: Colors.black,
             textColor: Colors.white);
@@ -70,8 +76,7 @@ class _LogInScreenState extends State<LogInScreen> {
     } catch (e) {
       Fluttertoast.showToast(
           msg: "Log In Failed.",
-          toastLength: Toast
-              .LENGTH_SHORT,
+          toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.black,
           textColor: Colors.white);
@@ -80,20 +85,22 @@ class _LogInScreenState extends State<LogInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    Widget gif = bellExchangeGif();
+     return Scaffold(
         body: SafeArea(
           child: Column(
             children: <Widget>[
-              bellExchangeGif(),
+              gif,
               usernameTextField(),
               passwordTextField(),
               rememberMeCheckbox(),
               buttonBar(),
-              googleSignInButton()
+              googleSignInButton(),
             ],
           ),
         ),
-        backgroundColor: Theme.of(context).canvasColor);
+        backgroundColor: Theme.of(context).canvasColor,
+    );
   }
 
   passwordTextField() {
@@ -106,22 +113,34 @@ class _LogInScreenState extends State<LogInScreen> {
   }
 
   rememberMeCheckbox() {
-    return Row(children: [
-      Checkbox(
-        value: isChecked,
-        onChanged: (bool? newValue) {
-          updateCheckboxState(newValue!);
-        },
-      ),
-      const Text('Remember Me')
-    ],);
-
-
+    return Row(
+      children: [
+        Checkbox(
+          value: isChecked,
+          onChanged: (bool? newValue) {
+            updateCheckboxState(newValue!);
+          },
+        ),
+        const Text('Remember Me')
+      ],
+    );
   }
 
-  bellExchangeGif() {
-    return Image.asset('lib/assets/bell_exchange_animation.gif',
-        width: MediaQuery.of(context).size.width, fit: BoxFit.cover);
+  Widget bellExchangeGif() {
+    return Image.asset(
+      'lib/assets/bell_exchange_animation.gif',
+      width: MediaQuery.of(context).size.width,
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+    );
+  }
+
+  reloadGif(Widget gif) {
+    gif = Image.asset(
+      'lib/assets/bell_exchange_animation.gif',
+      width: MediaQuery.of(context).size.width,
+      fit: BoxFit.cover,
+    );
   }
 
   textOne() {
@@ -147,23 +166,43 @@ class _LogInScreenState extends State<LogInScreen> {
           child: const Text('Log'),
         ),
         ElevatedButton(
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const SignUpScreen())),
+            onPressed: () {
+              Navigator.pushReplacement(context,
+                transitions.slide(const SignUpSplash(path: 1), 250, 1, 0),
+              );
+            },
             child: const Text('Sign Up'))
       ],
     ));
   }
 
   googleSignInButton() {
+    //TODO: Google sign in should splash screen into a new edit profile screen since
+    //TODO: it does not require a password entry. This new screen should have back button
+    //TODO: functionality so that pressing it deletes the user document in Firebase, ensuring the
+    //TODO: user initializes themselves upon first google log in.
     return SignInButton(
       Buttons.Google,
       onPressed: () async {
         User? user = await _authService.signInWithGoogle();
-
         if (user != null) {
-          AppUtils().toastie('User signed in: ${user.displayName}');
-          if(context.mounted) {
-            Navigator.popAndPushNamed(context, '/exchange');
+          final DocumentSnapshot userDoc =
+          await FirebaseFirestore.instance.collection('user_database').doc(user.uid).get();
+          if (!userDoc.exists) {
+            // Create MyUser Object using the auth id
+            MyUser myUser = MyUser(user.uid, '', '', '', '');
+            myUser.createUserInFirebase();
+            if (context.mounted) {
+              Navigator.pushReplacement(
+                context,
+                transitions.slide(const SignUpSplash(path: 2), 250, 1, 0),
+              );
+            }
+          } else {
+            AppUtils().toastie('User signed in: ${user.displayName}');
+            if (context.mounted) {
+              Navigator.popAndPushNamed(context, '/exchange');
+            }
           }
         } else {
           AppUtils().toastie('Google Sign-In failed or was canceled.');
@@ -199,11 +238,10 @@ class _LogInScreenState extends State<LogInScreen> {
 
   Future<void> updateRememberedUser(String name, String pass) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    if(isChecked) {
+    if (isChecked) {
       prefs.setString('rememberedName', name);
       prefs.setString('rememberedPass', pass);
-    }
-    else if(!isChecked) {
+    } else if (!isChecked) {
       await prefs.remove('rememberedName');
       await prefs.remove('rememberedPass');
       _usernameController.text = '';

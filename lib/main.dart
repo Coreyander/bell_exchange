@@ -1,4 +1,5 @@
 import 'package:bell_exchange/Screens/ExchangeScreen.dart';
+import 'package:bell_exchange/screens/SignUpSplashScreen.dart';
 import 'package:bell_exchange/screens/SplashScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -33,9 +34,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      routes:{'/login': (context) => const LogInScreen(title: 'title'),
+      routes:{
+        '/login': (context) => const LogInScreen(title: 'title'),
       '/exchange': (context) => const ExchangeScreen(),
-        '/settings': (context) => const SettingsScreen()},
+        '/settings': (context) => const SettingsScreen(),
+        '/signUpSplash': (context) => const SignUpSplash(path: 1)
+      },
       title: 'Bell Exchange',
       theme: ThemeData(
         canvasColor: Colors.blueGrey.shade100,

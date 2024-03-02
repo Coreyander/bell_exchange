@@ -2,6 +2,9 @@
 
 import 'package:bell_exchange/Database/schedule_entry.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../app_utils.dart';
 
 class MyUser {
   String userID;
@@ -16,7 +19,6 @@ class MyUser {
 
   Future<void> createUserInFirebase() async {
     CollectionReference users = FirebaseFirestore.instance.collection('user_database');
-
     Map<String, dynamic> dataObject = {
       'userID': userID,
       'name': name,
@@ -31,7 +33,25 @@ class MyUser {
         
   }
 
-  changeUserInFirebase() {}
+  updateUserInFirebase() async {
+    CollectionReference users = FirebaseFirestore.instance.collection('user_database');
+    DocumentReference userRef = users.doc(userID);
+    DocumentSnapshot userSnapshot = await userRef.get();
+    if (userSnapshot.exists) {
+      await userRef.update({
+        'name': name,
+        'role': role,
+        'hubID': hubID,
+        'perner': perner,
+        'schedule': schedule,
+        'flags': flags
+      });
+    } else {
+      AppUtils().toastie("User Not Found. Please log out and try again.");
+      throw Exception('User document does not exist');
+    }
+
+  }
   deleteUserInFirebase() {}
 }
 

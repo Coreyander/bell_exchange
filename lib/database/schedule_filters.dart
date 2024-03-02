@@ -9,8 +9,8 @@ class ScheduleFiltersBellperson {
   Map<String, bool> asMap() {
     return {
       'overnight_bp': overnight,
-      'dayShift_bp': morningShift,
-      'nightShift_bp': eveningShift
+      'morningShift_bp': morningShift,
+      'eveningShift_bp': eveningShift
     };
   }
 

@@ -1,5 +1,11 @@
+import 'package:bell_exchange/Screens/SignUpSplashScreen.dart';
+import 'package:bell_exchange/database/my_user.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
+import '../animations/transitions.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -26,7 +32,9 @@ class AuthService {
       // Sign in to Firebase with the Google credentials
       final UserCredential authResult = await _auth.signInWithCredential(credential);
 
-      return authResult.user;
+      final User? user = authResult.user;
+
+      return user;
     } catch (error) {
       print("Error signing in with Google: $error");
       return null;
