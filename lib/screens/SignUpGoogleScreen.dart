@@ -34,9 +34,7 @@ class _SignUpGoogleScreenState extends State<SignUpGoogleScreen> {
         return true;
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Header'), // Set your app title here
-        ),
+        appBar: AppBar(),
         body: Column(
           children: [
             Form(

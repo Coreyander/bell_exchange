@@ -2,8 +2,6 @@
 
 import 'package:bell_exchange/Database/schedule_entry.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
 import '../app_utils.dart';
 
 class MyUser {
@@ -14,6 +12,7 @@ class MyUser {
   String perner;
   List<ScheduleEntry> schedule = [];
   Map<String, bool> flags = {'overnight': false, 'giving': false, 'taking': false};
+  String profilePicture = "";
 
   MyUser(this.userID, this.name, this.role, this.hubID, this.perner);
 
@@ -26,10 +25,11 @@ class MyUser {
       'hubID': hubID,
       'perner': perner,
       'schedule': schedule,
-      'flags': flags
+      'flags': flags,
+      'profilePicture': profilePicture
     };
 
-    await users.doc(userID).set(dataObject);
+    await users.doc(userID).set(dataObject, SetOptions(merge: true));
         
   }
 
@@ -52,6 +52,9 @@ class MyUser {
     }
 
   }
+
   deleteUserInFirebase() {}
+
+
 }
 

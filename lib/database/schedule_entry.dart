@@ -98,7 +98,7 @@ class ScheduleEntry {
           docData['endTime'] ?? '',
           docData['user'] ?? '',
           ScheduleFlags.fromMap(docData['flags']), //Expecting a Map<String, dynamic>
-          docData['day'].toDate(), //Expecting a TimeStamp
+          docData['day'].toDate() ?? DateTime.timestamp(), //Expecting a TimeStamp
           docData['weekday'] ?? '');
     }).toList();
     deleteScheduleDayInFirebase(entryMasterList);

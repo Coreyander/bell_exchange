@@ -20,7 +20,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Header'), // Set your app title here
+        title: const Text('Edit Profile'), // Set your app title here
       ),
       body: Column(
         children: [

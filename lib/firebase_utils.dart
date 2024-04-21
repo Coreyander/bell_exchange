@@ -1,13 +1,18 @@
 
 
-import 'package:bell_exchange/screens/SettingsScreen.dart';
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
 import 'Screens/UpdateUserScreen.dart';
+import 'app_utils.dart';
+import 'database/my_user.dart';
 
 class FirebaseUtils {
   /*
@@ -51,6 +56,13 @@ class FirebaseUtils {
 
   }
 
+  DocumentReference getUserDocumentReference() {
+    DocumentReference docRef = FirebaseFirestore.instance.collection('user_database').doc(auth.currentUser?.uid);
+    return docRef;
+  }
+
+  ///Returns only the data in the form of a Map from Firebase.
+  ///If you want to return the data as a parsed object MyUser then use [getUserDataAsMyUser()]
   Future<Map<String, dynamic>> getUserData() async {
     Map<String, dynamic> userData = {};
     FirebaseAuth auth = FirebaseAuth.instance;
@@ -62,6 +74,33 @@ class FirebaseUtils {
     } else {
       print('User document does not exist');
       return userData;
+    }
+  }
+
+  ///Returns data from Firebase on a user. If successful, this will parse the data
+  ///into a [MyUser] Object and return the object.
+  Future<MyUser> getUserDataAsMyUser() async {
+    Map<String, dynamic> userData = {};
+    FirebaseAuth auth = FirebaseAuth.instance;
+    String userId = getCurrentUserID(auth);
+    DocumentSnapshot userDocument = await getUserDocument(userId);
+    if (userDocument.exists) {
+      userData = userDocument.data() as Map<String, dynamic>? ?? {};
+      try {
+        String userID = userData['userID'];
+        String name = userData['name'];
+        String role = userData['role'];
+        String hubID = userData['hubID'];
+        String perner = userData['perner'];
+        return MyUser(userID,name,role,hubID,perner);
+      } catch (e) {
+        return MyUser("","Error","","","");
+      }
+    } else {
+      if (kDebugMode) {
+        print('User document does not exist');
+      }
+      return MyUser("", "", "", "", "");
     }
   }
 
@@ -100,6 +139,27 @@ class FirebaseUtils {
     }
   }
 
+  ///Gets the role of the current active user logged in the app
+  Future<String> getCurrentUserRole() async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    FirebaseAuth auth = FirebaseAuth.instance;
+    User? user = auth.currentUser;
+    if (user != null) {
+      CollectionReference usersCollection = firestore.collection('user_database');
+      DocumentSnapshot documentSnapshot = await usersCollection.doc(user.uid).get();
+      Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
+      if (data != null && data.containsKey('role')) {
+        String role = data['role'];
+        print(role);
+        return role;
+      } else {
+        return 'Role not found';
+      }
+    } else {
+      return 'No User Signed On';
+    }
+  }
+
   Future<String> getUserName(String userId) async {
     DocumentSnapshot documentSnapshot = await getUserDocument(userId);
     Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
@@ -111,6 +171,42 @@ class FirebaseUtils {
     }
   }
 
+  Future<Uint8List?> getProfileImage(String uid) async {
+    final storage = FirebaseStorage.instance;
+    DocumentSnapshot documentSnapshot = await getUserDocument(
+        uid);
+    Map<String, dynamic>? data = documentSnapshot.data() as Map<String,
+        dynamic>?;
+    if (data != null && data.containsKey('profilePicture')) {
+      String profilePictureURL = data['profilePicture'];
+      Reference imageRef = storage.refFromURL(profilePictureURL);
+      try {
+        const twentyFiveMegabytes = 1024 * 1024 * 25;
+        final Uint8List? image = await imageRef.getData(twentyFiveMegabytes);
+        return image;
+      }
+      catch (e) {
+        AppUtils().toastie("Error Retrieving Image Data");
+        return Uint8List(0);
+      }
+    }
+  }
+
+  Stream<Uint8List> getProfileImageStream() {
+
+    StreamController<Uint8List> streamController = StreamController<Uint8List>();
+    Reference reference = FirebaseStorage.instance.ref().child('profileImages/${auth.currentUser?.uid}');
+    reference.getData().then((data) {
+      streamController.add(data!);
+      }).catchError((error) {
+      if (kDebugMode) {
+        print('Error retrieving profile image: $error');
+      }
+      streamController.addError(error);
+    });
+    return streamController.stream;
+
+  }
 
   ///Requires a document reference for a user. Updates that user's name data.
   Future<void> updateName(DocumentReference userDocumentRef, String name) async {
@@ -139,13 +235,37 @@ class FirebaseUtils {
       print('Error updating Perner: $error');
     }
   }
-
-  CollectionReference<Object?> getChatroomsForUser(String userId) {
-    CollectionReference userCollection = FirebaseFirestore.instance.collection('user_data');
-    DocumentReference userDocRef = userCollection.doc(userId);
-    CollectionReference chatRoomsCollection = userDocRef.collection('chatrooms');
-    return chatRoomsCollection;
+  ///Requires a document reference for a user. Updates that user's role data.
+  Future<void> updateRole(DocumentReference userDocumentRef, String role) async {
+    try {
+      await userDocumentRef.update({'role': role});
+      print('Role updated successfully');
+    } catch (error) {
+      print('Error updating Role: $error');
+    }
   }
+
+  ///Gets the chatroom collection associated with the userId passed
+  Future<List<DocumentSnapshot>> getChatrooms(String userId) async {
+    CollectionReference chatroomCollection = FirebaseFirestore.instance.collection('chatrooms');
+    Query queryParticipant = chatroomCollection.where('participant', isEqualTo: userId);
+    Query queryOwner = chatroomCollection.where('owner', isEqualTo: userId);
+
+    // Execute both queries concurrently
+    List<QuerySnapshot> querySnapshots = await Future.wait([
+      queryParticipant.get(),
+      queryOwner.get(),
+    ]);
+
+    // Extract documents from query snapshots
+    List<DocumentSnapshot> documents = [];
+    for (QuerySnapshot snapshot in querySnapshots) {
+      documents.addAll(snapshot.docs);
+    }
+
+    return documents;
+  }
+
 
   signOff() async {
     GoogleSignIn googleSignIn = GoogleSignIn();
@@ -186,4 +306,16 @@ class FirebaseUtils {
       print('Error deleting user account: $error');
     }
   }
+
+
+    setProfilePicture(String uid, File file) async {
+        final storage = FirebaseStorage.instance;
+        await storage.ref('profileImages/$uid').putFile(file);
+        String downloadURL = await storage.ref('profileImages/$uid').getDownloadURL();
+        DocumentReference docReference = FirebaseFirestore.instance.collection('user_database').doc(uid);
+        await docReference.set({'profilePicture':downloadURL}, SetOptions(merge: true));
+    }
+
+
+
 }

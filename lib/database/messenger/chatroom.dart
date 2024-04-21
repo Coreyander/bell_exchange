@@ -6,7 +6,7 @@ import 'package:flutter/cupertino.dart';
 ///   The current user can be identified by their userID through Firebase auth
 ///2. The other participant is not the owner, but has messages including the owner's userID (messages display on the left)
 ///3. Messages are loaded by timestamp, for oldest to newest
-///4. A Chatroom has a unique ID in the form of userID-participantId so that more than one chatroom with the same two people cannot be created
+///4. A Chatroom has a unique ID in the form of schedule post ID + participant's so that more than one chatroom with the same two people cannot be created
 ///To use Firebase calls, construct an Object with Chatroom.utils()
 ///To create a chatroom Object, construct an Object with Chatroom(String, String, String)
 class Chatroom {
@@ -18,7 +18,7 @@ class Chatroom {
   Chatroom(this.chatroomId, this.owner, this.participant);
 
   //Firebase Data structure
-  ///This takes the data of and object and adds it to a map suitable for parsing to Firebase
+  ///This takes the data of the object and adds it to a map suitable for parsing to Firebase
   Map<String, dynamic> parseToFirebaseDataStructure() {
     return {
       'chatroomId': chatroomId,
@@ -27,16 +27,33 @@ class Chatroom {
     };
   }
 
-  ///Accepts all snapshots in the chatroom collection from Firebase and parses it to a List<Chatroom> Object Array
-  List<Chatroom> getChatrooms(AsyncSnapshot<QuerySnapshot> snapshot) {
-    List<Chatroom> chatrooms = snapshot.data!.docs.map((DocumentSnapshot doc) {
-      Map<String, dynamic> docData = doc.data() as Map<String, dynamic>;
-      return Chatroom(
-          docData['chatroomId'] ?? '',
-          docData['owner'] ?? '',
-          docData['participant'] ?? '',
-      );
-    }).toList();
+  ///Accepts all snapshots in the chatroom query from Firebase and parses it to a List<Chatroom> Object Array
+  List<Chatroom> parseFromFirebaseChatrooms(List<DocumentSnapshot> snapshot) {
+    List<Chatroom> chatrooms = [];
+    for(int index = 0; index < snapshot.length; index++) {
+      Map<String, dynamic> docData = snapshot[index].data() as Map<String, dynamic>;
+      chatrooms.add(Chatroom(
+        docData['chatroomId'] ?? '',
+        docData['owner'] ?? '',
+        docData['participant'] ?? '',
+      ));
+    }
     return chatrooms;
+  }
+
+  ///Accepts one snapshot to get a specific room
+  Chatroom getARoom(DocumentSnapshot snapshot) {
+    Map<String, dynamic> docData = snapshot.data() as Map<String, dynamic>;
+    return Chatroom(
+      docData['chatroomId'] ?? '',
+      docData['owner'] ?? '',
+      docData['participant'] ?? '',
+    );
+
+  }
+
+  String generateRoomId(String postId, String participantId) {
+    String roomId = '$postId-$participantId';
+    return roomId;
   }
 }

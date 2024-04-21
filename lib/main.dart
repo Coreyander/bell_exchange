@@ -1,4 +1,8 @@
 import 'package:bell_exchange/Screens/ExchangeScreen.dart';
+import 'package:bell_exchange/screens/ChatroomScreen.dart';
+import 'package:bell_exchange/screens/EditProfileScreen.dart';
+import 'package:bell_exchange/screens/MessagesScreen.dart';
+import 'package:bell_exchange/screens/ProfileScreen.dart';
 import 'package:bell_exchange/screens/SignUpSplashScreen.dart';
 import 'package:bell_exchange/screens/SplashScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'Screens/LogInScreen.dart';
 import 'Screens/SettingsScreen.dart';
+import 'database/messenger/chatroom.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -36,15 +41,21 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       routes:{
         '/login': (context) => const LogInScreen(title: 'title'),
-      '/exchange': (context) => const ExchangeScreen(),
+        '/exchange': (context) => const ExchangeScreen(),
         '/settings': (context) => const SettingsScreen(),
-        '/signUpSplash': (context) => const SignUpSplash(path: 1)
+        '/signUpSplash': (context) =>  const SignUpSplash(path: 1),
+        '/chatroom': (context) => ChatroomScreen(room: Chatroom('','','')),
+        '/messages': (context) => const MessagesScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/editProfile': (context) => const EditProfileScreen(),
       },
       title: 'Bell Exchange',
       theme: ThemeData(
         canvasColor: Colors.blueGrey.shade100,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey.shade100),
         useMaterial3: true,
+         // Adjust header padding
+
       ),
       home: const SplashScreen(title: 'Main'),
     );

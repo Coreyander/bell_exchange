@@ -163,58 +163,8 @@ class _SignUpScreenState extends State<SignUpScreen>
             textAlign: TextAlign.center,
             maxLength: 25,
           )),
-      // Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      //   Padding(
-      //       padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-      //       child: SizedBox(
-      //         height: 30,
-      //         width: 30,
-      //         child: CheckMark(
-      //           active: _usernameAsDisplayIsChecked,
-      //           curve: Curves.decelerate,
-      //           duration: const Duration(milliseconds: 500),
-      //         ),
-      //       )),
-      //   ElevatedButton(
-      //       onPressed: () => displayNameButtonPressed(),
-      //       child: const Text('Use Email as Display Name'))
-      // ]),
     ]);
   }
-
-  /// This was a button that changed display name to match the username,
-  /// however later I realized that Firebase only auths password with email addresses.
-  /// TODO: Either delete this code altogether or explore custom sign in options OR redo it with regex to ignore DNS of email names.
-  /// *
-  //displayNameButtonPressed() {
-  //  ///If the displayname button is pressed, the sign in ID will copy over to displayname.
-  //  ///If it is deselected, a third controller, defaultController, clears its text and stops the mimic behavior
-  //  ///by assigning the displayNameController to the default. A checkmark animation alerts the user if they are
-  //  ///mimicking the fields or not.
-//
-  //  if (_usernameAsDisplayIsChecked == true) {
-  //    _defaultController.text = "";
-  //    _displayNameController = _defaultController;
-  //    _usernameAsDisplayIsChecked = false;
-  //    setState(() {
-  //      _usernameAsDisplayIsChecked = false;
-  //    });
-  //    if (_displayNameController.text == _usernameController.text) {
-  //      _displayNameController.text = '';
-  //    }
-  //  } else if (_usernameAsDisplayIsChecked != true) {
-  //    _usernameAsDisplayIsChecked = true;
-  //    Fluttertoast.showToast(
-  //        msg: 'Display Name Copied!',
-  //        gravity: ToastGravity.BOTTOM,
-  //        toastLength: Toast.LENGTH_SHORT);
-  //    setState(() {
-  //      _usernameAsDisplayIsChecked = true;
-  //    });
-  //    _displayNameController.text = _usernameController.text;
-  //    _displayNameController = _usernameController;
-  //  }
-  //}
 
   submitButtonBar() {
     return ButtonBar(

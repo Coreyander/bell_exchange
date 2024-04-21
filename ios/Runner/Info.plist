@@ -2,6 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+
+    <key>NSMicrophoneUsageDescription</key>
+    <string>This app is trying to access your microphone to record video sound to be used with videos within the app</string>
+    <key>NSCameraUsageDescription</key>
+    <string>This app is trying to access your camera to allow the image picker service to update, or add a photo within the app</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app is trying to access your photo library to use the image picker service to update, add, delete, and change photos within the app</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

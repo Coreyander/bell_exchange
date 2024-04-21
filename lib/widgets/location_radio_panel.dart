@@ -20,14 +20,16 @@ Map<String, String> radioValue = {
   'RS': 'Riverside',
   'OKW': 'Old Key West',
   'PY': 'Polynesian',
-  'CBR': 'Caribbean'
+  'CBR': 'Caribbean Beach'
 };
 
 class _LocationRadioPanelState extends State<LocationRadioPanel> {
   String currentValue = "";
-
   @override
   Widget build(BuildContext context) {
+    List<MapEntry<String, String>> entries = radioValue.entries.toList();
+    entries.sort((a, b) => a.key.compareTo(b.key));
+    radioValue = Map.fromEntries(entries);
     return Column(
       children: <Widget>[
         SizedBox(

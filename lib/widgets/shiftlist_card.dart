@@ -1,8 +1,13 @@
+import 'package:bell_exchange/firebase_utils.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../app_utils.dart';
+import '../database/messenger/chatroom.dart';
 import '../database/schedule_entry.dart';
 import '../datetime_utils.dart';
+import '../screens/ChatroomScreen.dart';
 import 'filter_iconlist.dart';
 
 ///A Card with stateful elements to be used in ExchangeScreen to show a clickable, interactive list element.
@@ -67,9 +72,9 @@ class ShiftlistCardState extends State<ShiftlistCard> {
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          // Handle button tap
+                          openChatroom();
                         },
-                        child: Text('Trade For'),
+                        child: Text('Message Shift Poster'),
                       ),
                     ],
                   ),
@@ -107,5 +112,24 @@ class ShiftlistCardState extends State<ShiftlistCard> {
       value = true;
     }
     return IconList(icons: filterImages, visibility: value);
+  }
+
+  void openChatroom() {
+    FirebaseAuth auth = FirebaseAuth.instance;
+    FirebaseUtils firebaseUtils = FirebaseUtils();
+    String currentUser = firebaseUtils.getCurrentUserID(auth);
+    if(widget.entry.documentId != '' && currentUser != '') {
+      String chatroomID = Chatroom.utils().generateRoomId(
+          widget.entry.documentId, currentUser);
+      Chatroom room = Chatroom(chatroomID,widget.entry.user,currentUser);
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+          builder: (context) => ChatroomScreen(room: room),
+    ));
+    } else {
+      AppUtils().toastie("Error retrieving Chatroom. Post may no longer exist.");
+    }
+
   }
 }

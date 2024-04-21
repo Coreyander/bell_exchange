@@ -21,7 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Header'), // Set your app title here
+        title: const Text('Settings'), // Set your app title here
       ),
       body: Column(
         children: [logOut()],

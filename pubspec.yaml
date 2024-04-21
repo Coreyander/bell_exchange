@@ -18,6 +18,7 @@ dependencies:
   intl: ^0.18.1
   firebase_core: ^2.20.0
   firebase_auth: ^4.12.0
+  firebase_storage: ^11.5.1
   cloud_firestore: ^4.12.1
   checkmark: ^0.0.2+1
   http: ^1.1.0
@@ -29,6 +30,9 @@ dependencies:
   google_sign_in: ^6.1.6
   flutter_signin_button: ^2.0.0
   url_launcher: ^6.2.4
+  wheel_picker: ^0.0.4
+  image_picker: ^1.0.7
+  permission_handler: ^11.0.1
 
 dev_dependencies:
   flutter_test:
@@ -42,6 +46,9 @@ flutter:
     - lib/assets/greeter_icon.png
     - lib/assets/shuttle_icon.png
     - lib/assets/transfers_icon.png
+    - lib/assets/profile_default.png
+    - lib/assets/whitespace.png
+    - lib/assets/send_message.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

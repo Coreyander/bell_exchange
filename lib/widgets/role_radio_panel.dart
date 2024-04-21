@@ -16,11 +16,12 @@ class RadioPanel extends StatefulWidget {
   State<StatefulWidget> createState() => _RadioPanelState();
 }
 
-List<String> radioValue = ['Dispatcher', 'Bellperson'];
+
 
 class _RadioPanelState extends State<RadioPanel> {
+  List<String> radioValue = ['Bellperson', 'Dispatcher'];
   List<bool> checkboxes = [false, false, false];
-  bool filterVisible = true;
+  bool filterVisible = false;
   String currentValue = "";
 
   @override
@@ -32,7 +33,14 @@ class _RadioPanelState extends State<RadioPanel> {
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
-        RadioListTile(title: const Text ('Dispatcher'), value: radioValue[0], groupValue: currentValue, onChanged: (value) {
+        RadioListTile(title: const Text ('Bellperson'), value: radioValue[0], groupValue: currentValue, onChanged: (value) {
+          setState(() {
+            currentValue = value.toString();
+            widget.onRoleSelected(currentValue);
+            filterVisible = false;
+          });
+        }),
+        RadioListTile(title: const Text ('Dispatcher'), value: radioValue[1], groupValue: currentValue, onChanged: (value) {
           setState(() {
             currentValue = value.toString();
             widget.onRoleSelected(currentValue);
@@ -40,7 +48,7 @@ class _RadioPanelState extends State<RadioPanel> {
           });
         }),
         Visibility(visible: filterVisible, child: Column(children: [
-          CheckboxListTile(title: const Text('shuttles'), value: checkboxes[0], onChanged: (bool? value) {
+          CheckboxListTile(visualDensity: VisualDensity.compact,contentPadding: EdgeInsets.only(left: 40),controlAffinity: ListTileControlAffinity.leading,title: const Text('shuttles'), value: checkboxes[0], onChanged: (bool? value) {
             setState(() {
               checkboxes[0] = value!;
               if (value == true) {
@@ -53,7 +61,7 @@ class _RadioPanelState extends State<RadioPanel> {
               }
             });
           }),
-          CheckboxListTile(title: const Text('transfer'), value: checkboxes[1], onChanged: (bool? value) {
+          CheckboxListTile(visualDensity: VisualDensity.compact,contentPadding: EdgeInsets.only(left: 40), controlAffinity: ListTileControlAffinity.leading,title: const Text('transfer'), value: checkboxes[1], onChanged: (bool? value) {
             setState(() {
               checkboxes[1] = value!;
               if (value == true) {
@@ -64,7 +72,7 @@ class _RadioPanelState extends State<RadioPanel> {
               }
             });
           }),
-          CheckboxListTile(title: const Text('greeter'), value: checkboxes[2], onChanged: (bool? value) {
+          CheckboxListTile(visualDensity: VisualDensity.compact,contentPadding: EdgeInsets.only(left: 40),controlAffinity: ListTileControlAffinity.leading,title: const Text('greeter'), value: checkboxes[2], onChanged: (bool? value) {
             setState(() {
               checkboxes[2] = value!;
               if (value == true) {
@@ -76,13 +84,6 @@ class _RadioPanelState extends State<RadioPanel> {
             });
           }),
         ],)),
-        RadioListTile(title: const Text ('Bellperson'), value: radioValue[1], groupValue: currentValue, onChanged: (value) {
-          setState(() {
-            currentValue = value.toString();
-            widget.onRoleSelected(currentValue);
-            filterVisible = false;
-          });
-        }),
       ]
     );
   }
